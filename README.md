@@ -5,6 +5,13 @@ The effective operation of medical practices involves the collaboration of multi
 
 ---
 
+#### **Tech Stack:**
+- **Backend:** NodeJS + TypeScript
+- **Frontend:** React
+- **Database:** PostgreSQL
+
+---
+
 #### **Acceptance Criteria:**
 
 **User Management:**
