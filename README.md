@@ -28,73 +28,6 @@ Make sure the following are installed on your system:
    ```bash
    git clone https://github.com/zigpot/senior-engingeer-todo-feature.git
    cd senior-engineer-todo-feature
-
-To create documentation for running the project, we will set up a `README.md` file at the root of your project. Below is an outline of what the documentation should include and how to write it.
-
----
-
-### **Documentation Outline for `README.md`**
-
-1. **Project Overview**
-   - Brief description of the project.
-
-2. **Tech Stack**
-   - Backend: Node.js + TypeScript
-   - Frontend: React.js
-   - Database: PostgreSQL
-
-3. **Prerequisites**
-   - Node.js and npm installed
-   - PostgreSQL installed and running
-
-4. **Installation**
-   - Step-by-step guide to set up the project locally.
-
-5. **Environment Variables**
-   - Explanation of required `.env` files.
-
-6. **Running the Project**
-   - Commands to start the backend and frontend.
-
-7. **Database Setup**
-   - How to run migrations and seed the database.
-
-
----
-
-### **Sample Documentation Content**
-
-```markdown
-# TODO Feature for Medical Practices
-
-A task management system designed to facilitate collaboration among doctors, nurses, and secretaries in medical practices. Includes features for user management, patient management, and task assignment.
-
----
-
-## Tech Stack
-
-- **Backend**: Node.js + TypeScript
-- **Frontend**: React.js + TypeScript
-- **Database**: PostgreSQL
-
----
-
-## Prerequisites
-
-Make sure the following are installed on your system:
-
-- [Node.js](https://nodejs.org) (v16 or higher)
-- [npm](https://www.npmjs.com/) (comes with Node.js)
-- [PostgreSQL](https://www.postgresql.org/) (v12 or higher)
-
----
-
-## Installation
-
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd senior-engineer-todo-feature
    ```
 
 2. Install dependencies for both backend and frontend:
@@ -188,6 +121,3 @@ npm run test
 ## License
 
 This project is licensed under the MIT License.
-```
-
----
