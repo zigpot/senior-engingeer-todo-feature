@@ -1,5 +1,3 @@
-`node database/seeders/seed.js`
-
 # TODO Feature for Medical Practices
 
 A task management system designed to facilitate collaboration among doctors, nurses, and secretaries in medical practices. Includes features for user management, patient management, and task assignment.
@@ -19,7 +17,7 @@ A task management system designed to facilitate collaboration among doctors, nur
 Make sure the following are installed on your system:
 
 - [Node.js](https://nodejs.org) (v16 or higher)
-- [npm](https://www.npmjs.com/) (comes with Node.js)
+- [npm](https://www.npmjs.com/) 
 - [PostgreSQL](https://www.postgresql.org/) (v12 or higher)
 
 ---
@@ -28,7 +26,7 @@ Make sure the following are installed on your system:
 
 1. Clone the repository:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/zigpot/senior-engingeer-todo-feature.git
    cd senior-engineer-todo-feature
 
 To create documentation for running the project, we will set up a `README.md` file at the root of your project. Below is an outline of what the documentation should include and how to write it.
@@ -61,11 +59,6 @@ To create documentation for running the project, we will set up a `README.md` fi
 7. **Database Setup**
    - How to run migrations and seed the database.
 
-8. **Testing**
-   - How to run tests (if available).
-
-9. **Additional Notes**
-   - Other tips, optional configurations, or known issues.
 
 ---
 
@@ -173,7 +166,7 @@ node database/seeders/seed.js
 
 ## Testing
 
-Run tests (if available) for the backend:
+Run tests for the backend:
 ```bash
 npm run test
 ```
@@ -198,20 +191,3 @@ This project is licensed under the MIT License.
 ```
 
 ---
-
-### **Add the README File**
-Create the `README.md` file at the root of your project:
-```bash
-touch README.md
-```
-
-Copy the content above into the file.
-
----
-
-### **Commit the Documentation**
-Add and commit the `README.md` file:
-```bash
-git add README.md
-git commit -m "Added initial documentation for running the project"
-```
