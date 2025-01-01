@@ -1,99 +1,217 @@
-### Task: Development of a Comprehensive TODO-Feature for Medical Practices
+`node database/seeders/seed.js`
 
-#### Context:
-The effective operation of medical practices involves the collaboration of multiple roles, necessitating robust task management to ensure clarity in responsibilities. A "To-Do" feature is indispensable for facilitating the assignment, tracking, and management of tasks across varied roles within the practice.
+# TODO Feature for Medical Practices
 
----
-
-#### **Tech Stack:**
-- **Backend:** NodeJS + TypeScript
-- **Frontend:** React
-- **Database:** PostgreSQL
+A task management system designed to facilitate collaboration among doctors, nurses, and secretaries in medical practices. Includes features for user management, patient management, and task assignment.
 
 ---
 
-#### **Acceptance Criteria:**
+## Tech Stack
 
-**User Management:**
-
-- **User Creation:**
-  - Enable the creation of users with predefined roles: **Doctor**, **Nurse**, and **Secretary**.
-  - For users assigned the role of Doctor, additional attributes, such as a unique **doctor number**, must be captured and stored.
-
-**Patient Management:**
-
-- **Patient Creation:**
-  - Allow the creation of patient profiles that can be associated with one or more doctors.
-
-**To-Do Management:**
-
-- **Task Creation and Assignment:**
-  - Facilitate the creation of To-Do items that can be assigned to one or multiple users.
-  - Provide the ability to define deadlines for each task.
-- **Task-Resource Interaction:**
-  - Enable the integration of external resources, such as patient files, doctor letters, or prescriptions, within To-Do items.
-  - Example Use Case: A To-Do item might specify, “Review the doctor letter of patient PATIENT_NAME,” with an interactive link to the referenced doctor letter, allowing the assigned user to access it via a modal for review.
-
-**Frontend Requirements:**
-
-1. **Task Visualization:**
-   - Display a comprehensive list of all To-Do items.
-2. **Task Creation:**
-   - Provide an interface for creating new To-Do items.
-3. **Task Modification:**
-   - Support updates to existing tasks, including modifications to deadlines and user assignments.
-4. **Task Filtering:**
-   - Implement filtering capabilities to sort and view tasks based on:
-     - Deadline dates.
-     - Assigned users.
-     - Associated resources (e.g., patients, doctor letters).
+- **Backend**: Node.js + TypeScript
+- **Frontend**: React.js + TypeScript
+- **Database**: PostgreSQL
 
 ---
 
-#### **Deliverables:**
+## Prerequisites
 
-1. **Backend Development:**
-   - Implement endpoints to support CRUD (Create, Read, Update, Delete) operations for Users, Patients, and To-Do items.
-   - Develop functionality to link and interact with external resources.
+Make sure the following are installed on your system:
 
-2. **Frontend Development:**
-   - Create a user interface that enables:
-     - Viewing, creating, and updating To-Do items.
-     - Filtering tasks based on the aforementioned criteria.
-     - Interaction with linked external resources.
-
-3. **Code Documentation:**
-   - Include inline comments to elucidate the purpose and logic of key components.
-   - Provide a detailed README.md file outlining setup instructions, database seeding, and feature testing procedures.
-
-4. **Additional Enhancements (Bonus):**
-   - Incorporate unit tests to validate backend logic.
-   - Implement user authentication to secure task management functionalities.
+- [Node.js](https://nodejs.org) (v16 or higher)
+- [npm](https://www.npmjs.com/) (comes with Node.js)
+- [PostgreSQL](https://www.postgresql.org/) (v12 or higher)
 
 ---
 
-#### **Evaluation Criteria:**
+## Installation
 
-1. **Feature Fulfillment:**
-   - Does the implementation comprehensively satisfy the stated acceptance criteria?
-2. **Code Quality:**
-   - Is the codebase well-structured, modular, and accompanied by adequate documentation?
-3. **Database Design:**
-   - Are the database models and relationships optimized for scalability and efficiency?
-4. **Frontend Usability:**
-   - Does the user interface facilitate intuitive interaction with tasks and resources?
-5. **Scalability and Extensibility:**
-   - Is the solution designed with future enhancements in mind?
-6. **Additional Features:**
-   - Are supplementary features, such as authentication or comprehensive testing, implemented?
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd senior-engineer-todo-feature
+
+To create documentation for running the project, we will set up a `README.md` file at the root of your project. Below is an outline of what the documentation should include and how to write it.
 
 ---
 
-#### Submission Guidelines:
+### **Documentation Outline for `README.md`**
 
-- Upload the completed solution to a GitHub repository (public or private).
-- Include detailed instructions in the README file for:
-  - Setting up the application.
-  - Seeding the database with sample data.
-  - Testing the implemented functionalities.
+1. **Project Overview**
+   - Brief description of the project.
 
+2. **Tech Stack**
+   - Backend: Node.js + TypeScript
+   - Frontend: React.js
+   - Database: PostgreSQL
+
+3. **Prerequisites**
+   - Node.js and npm installed
+   - PostgreSQL installed and running
+
+4. **Installation**
+   - Step-by-step guide to set up the project locally.
+
+5. **Environment Variables**
+   - Explanation of required `.env` files.
+
+6. **Running the Project**
+   - Commands to start the backend and frontend.
+
+7. **Database Setup**
+   - How to run migrations and seed the database.
+
+8. **Testing**
+   - How to run tests (if available).
+
+9. **Additional Notes**
+   - Other tips, optional configurations, or known issues.
+
+---
+
+### **Sample Documentation Content**
+
+```markdown
+# TODO Feature for Medical Practices
+
+A task management system designed to facilitate collaboration among doctors, nurses, and secretaries in medical practices. Includes features for user management, patient management, and task assignment.
+
+---
+
+## Tech Stack
+
+- **Backend**: Node.js + TypeScript
+- **Frontend**: React.js + TypeScript
+- **Database**: PostgreSQL
+
+---
+
+## Prerequisites
+
+Make sure the following are installed on your system:
+
+- [Node.js](https://nodejs.org) (v16 or higher)
+- [npm](https://www.npmjs.com/) (comes with Node.js)
+- [PostgreSQL](https://www.postgresql.org/) (v12 or higher)
+
+---
+
+## Installation
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd senior-engineer-todo-feature
+   ```
+
+2. Install dependencies for both backend and frontend:
+   ```bash
+   cd backend
+   npm install
+   cd ../frontend
+   npm install
+   ```
+
+---
+
+## Environment Variables
+
+Create `.env` files in the `backend` and `frontend` directories.
+
+### Backend `.env`:
+```
+PORT=5000
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=your_db_user
+DB_PASSWORD=your_db_password
+DB_NAME=todo_db
+```
+
+### Frontend `.env`:
+```
+REACT_APP_API_URL=http://localhost:5000
+```
+
+---
+
+## Running the Project
+
+### 1. Start the Backend
+Navigate to the `backend` directory:
+```bash
+cd backend
+npm run dev
+```
+
+### 2. Start the Frontend
+Navigate to the `frontend` directory:
+```bash
+cd ../frontend
+npm start
+```
+
+The application should now be accessible at `http://localhost:3000`.
+
+---
+
+## Database Setup
+
+### 1. Run Migrations
+Navigate to the `backend` directory and execute your migration scripts:
+```bash
+npm run migrate
+```
+
+### 2. Seed the Database
+Seed the database with initial data:
+```bash
+node database/seeders/seed.js
+```
+
+---
+
+## Testing
+
+Run tests (if available) for the backend:
+```bash
+npm run test
+```
+
+Run tests for the frontend:
+```bash
+npm run test
+```
+
+---
+
+## Additional Notes
+
+- Make sure the backend is running before starting the frontend.
+- Ensure PostgreSQL is running and accessible.
+
+---
+
+## License
+
+This project is licensed under the MIT License.
+```
+
+---
+
+### **Add the README File**
+Create the `README.md` file at the root of your project:
+```bash
+touch README.md
+```
+
+Copy the content above into the file.
+
+---
+
+### **Commit the Documentation**
+Add and commit the `README.md` file:
+```bash
+git add README.md
+git commit -m "Added initial documentation for running the project"
+```
