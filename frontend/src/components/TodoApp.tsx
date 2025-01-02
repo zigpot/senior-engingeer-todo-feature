@@ -1,4 +1,13 @@
 import React, { useState, useEffect } from "react";
+import "./TodoApp.css";
+
+/**TODOS
+ * 1. Press enter input
+ * 2. buttons icon
+ * 3. smooth scrollbar
+ * 4. edit functionality
+ * 5. 
+ */
 
 // Define interfaces for our data structures
 interface Todo {
@@ -28,7 +37,7 @@ const TodoApp: React.FC = () => {
       .catch((err) => console.error("Error fetching tasks:", err));
 
     // You can also fetch categories from the backend if implemented
-    setCategories(["Work", "Personal", "Groceries"]); // Example categories
+    setCategories(["F", "categories", "and", "tasks", "from", "the", "backend", "on", "component", "mount","Work", "Personal", "Groceries","You", "can", "also", "fetch", "categories", "from", "the", "backend", "if", "implemented"]); // Example categories
   }, [tasks]);
 
   const handleAddTask = () => {
@@ -86,10 +95,10 @@ const TodoApp: React.FC = () => {
   };
 
   return (
-    <div style={{ display: "flex", height: "100vh" }}>
+    <div className="todoapp">
       {/* Sidebar */}
-      <div style={{ width: "25%", backgroundColor: "#f4f4f4", padding: "1rem" }}>
-        <div style={{ marginBottom: "1rem" }}>
+      <div className="sidebar">
+        <div className="categories">
           {categories.map((category, index) => (
             <div
               key={index}
@@ -97,6 +106,8 @@ const TodoApp: React.FC = () => {
                 padding: "10px",
                 marginBottom: "5px",
                 backgroundColor: selectedCategory === category ? "#d0d0d0" : "#e0e0e0",
+                fontWeight: selectedCategory === category ? "bold" : "",
+                color:  selectedCategory === category ? "black" : "#444444",
                 borderRadius: "5px",
                 cursor: "pointer",
               }}
@@ -106,41 +117,42 @@ const TodoApp: React.FC = () => {
             </div>
           ))}
         </div>
+        <div ><button className="add-category">+</button></div>
       </div>
 
       {/* Main Content */}
-      <div style={{ flex: 1, padding: "1rem", backgroundColor: "#fff" }}>
-        <div style={{ fontSize: "1.5rem", fontWeight: "bold", marginBottom: "1rem" }}>
+      <div className="main">
+        <div className="header">
           {selectedCategory || "Select a Category"}
         </div>
         {selectedCategory && (
-          <div style={{ marginBottom: "1rem" }}>
+          <div className="add-task">
             <input
               type="text"
               value={newTask}
               placeholder="Add a new task"
               onChange={(e) => setNewTask(e.target.value)}
-              style={{ width: "100%", padding: "10px", borderRadius: "5px", border: "1px solid #ccc" }}
+              className="add-task"
             />
-            <button onClick={handleAddTask}>Add</button>
+            <button className="add-task" onClick={handleAddTask}>Add</button>
           </div>
         )}
-        <div style={{ borderTop: "1px solid #ccc", paddingTop: "1rem" }}>
+        <div className="task-list">
           {tasks
             .map((task) => (
-              <div key={task.id} style={{ display: "flex", alignItems: "center", marginBottom: "10px" }}>
+              <div key={task.id} className="task">
                 <input
                   type="checkbox"
                   checked={task.completed}
                   onChange={() => handleToggleTask(task.id)}
-                  style={{ marginRight: "10px" }}
+                  className="task"
                 />
                 <span>{task.task}</span>
-                <div style={{ marginLeft: "auto" }}>
-                <button onClick={() => handleDeleteTask(task.id)}>
+                <div className="task-buttons-container">
+                <button className="task-button" onClick={() => handleDeleteTask(task.id)}>
                   Edit
                 </button>
-                <button onClick={() => handleDeleteTask(task.id)} >
+                <button className="task-button" onClick={() => handleDeleteTask(task.id)} >
                   Delete
                 </button>
                 </div>

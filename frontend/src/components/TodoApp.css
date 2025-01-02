@@ -1,0 +1,150 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.todoapp {
+    font-family: Roboto, Arial, sans-serif;
+    display: flex;
+    height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 25%;
+    background-color: #f4f4f4;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+}
+
+.sidebar .categories {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+}
+
+.category {
+    padding: 10px;
+    margin-bottom: 5px;
+    background-color: #e0e0e0;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.category:hover {
+    background-color: #d0d0d0;
+}
+
+.add-category {
+    padding: 10px;
+    text-align: center;
+    background-color: #ccc;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    font-size: 1.5rem;
+}
+
+.add-category:hover {
+    background-color: #bbb;
+}
+
+/* Main area */
+.main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    background-color: #fff;
+}
+
+.main .header {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+.main .add-task {
+    margin-bottom: 1rem;
+}
+
+.add-task input {
+    width: 80%;
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+.add-task button {
+    width: 10%;
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-left: 10px;
+}
+
+.task-list {
+    flex: 1;
+    overflow-y: auto;
+    border-top: 1px solid #ccc;
+    margin-top: 1rem;
+    padding-top: 1rem;
+}
+
+.task {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.task input[type="checkbox"] {
+    margin-right: 10px;
+}
+
+.task-buttons-container{
+    display: flex;
+    margin-left: auto;
+}
+
+.task button{
+    padding:5px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+
+/* Responsive */
+@media (max-width: 768px) {
+    .todoapp {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        height: 20%;
+        flex-direction: row;
+        overflow-x: auto;
+        padding: 0.5rem;
+    }
+
+    .sidebar .categories {
+        flex: unset;
+        display: flex;
+        flex-direction: row;
+        margin-bottom: 0;
+    }
+
+    .category {
+        margin-right: 5px;
+        margin-bottom: 0;
+    }
+
+    .main {
+        height: 80%;
+    }
+}
