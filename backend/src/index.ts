@@ -133,6 +133,9 @@ app.put("/todos/:id", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    // Log the successful update
+    console.log(`Task with ID ${id} successfully updated:`, result.rows[0]);
+
     res.json(result.rows[0]);
   } catch (error) {
     console.error("Error updating task:", error);

@@ -2,31 +2,35 @@ import React, { useState, useEffect } from "react";
 import "./TodoApp.css";
 
 /**TODOS
-
  * 1. Press enter input
-
  * 2. buttons icon
-
  * 3. smooth scrollbar
-
  * 4. edit functionality
-
  * 5. 
-
  */
-
 
 interface Todo {
   id: number;
-  task: string;
+  title: string;
+  description?: string;
+  deadline?: Date;
+  created_at: Date;
   completed: boolean;
-  category: string;
 }
 
+// interface Todo {
+//   id: number;
+//   task: string;
+//   completed: boolean;
+//   category: string;
+// }
+
 interface TodoCreate {
-  task: string;
+  title: string;
+  description?: string;
+  deadline?: Date;
+  created_at: Date;
   completed: boolean;
-  category: string;
 }
 
 const TodoApp: React.FC = () => {
@@ -51,10 +55,13 @@ const TodoApp: React.FC = () => {
     if (!newTask.trim() || !selectedCategory) return;
 
     const newTaskObject: TodoCreate = {
-      task: newTask,
+      title: newTask,
+      description: "To be filled",
+      created_at: new Date(), // sets to the current date and time
       completed: false,
-      category: selectedCategory,
+      deadline: new Date(new Date().getTime() + 14 * 24 * 60 * 60 * 1000), // sets to two weeks from now
     };
+    
 
     fetch("http://localhost:5000/todos", {
       method: "POST",
@@ -76,7 +83,7 @@ const TodoApp: React.FC = () => {
     const taskToUpdate = tasks.find((task) => task.id === id);
     if (!taskToUpdate) return;
 
-    fetch(`http://localhost:5000/todos/${id}`, {
+    fetch(`http://localhost:5000/todos/${id}/toggle`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -94,7 +101,7 @@ const TodoApp: React.FC = () => {
 
   const handleStartEdit = (task: Todo) => {
     setEditingTaskId(task.id);
-    setEditingText(task.task);
+    setEditingText(task.title);
   };
 
   const handleSaveEdit = (id: number) => {
@@ -108,7 +115,7 @@ const TodoApp: React.FC = () => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ ...taskToUpdate, task: editingText }),
+      body: JSON.stringify({ ...taskToUpdate, title: editingText }),
     })
       .then((res) => res.json())
       .then((updatedTask: Todo) => {
@@ -187,7 +194,10 @@ const TodoApp: React.FC = () => {
                   autoFocus
                 />
               ) : (
-                <span>{task.task}</span>
+                <div>
+                  <span style={{ 'display': 'block' }}>{task.title}</span>
+                  <span style={{ 'display': 'block', 'fontSize': '15px', 'fontWeight': '100', 'color':'#6d6d6d' }}>{task.description}</span>
+                </div>
               )}
               <div className="actions">
                 <button 
