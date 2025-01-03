@@ -25,11 +25,27 @@
     margin-bottom: 1rem;
 }
 
+
+.sidebar .categories-header {
+    padding: 20px;
+}
+
 .category {
     padding: 10px;
     margin-bottom: 5px;
+    background-color: #f4f4f4;
+    /* border-radius: 5px; */
+    cursor: pointer;
+    color:#636363;
+    transition: background-color 0.2s;
+}
+
+.categoryselected {
+    padding: 10px;
+    margin-bottom: 5px;
     background-color: #e0e0e0;
-    border-radius: 5px;
+    font-weight: bold;
+    /* border-radius: 5px; */
     cursor: pointer;
     transition: background-color 0.2s;
 }
@@ -103,18 +119,46 @@
 
 .task input[type="checkbox"] {
     margin-right: 10px;
+    size: 20px;
 }
 
-.task-buttons-container{
+.task input[type="text"] {
+    background-color: #ffffcc;
+    border: none;
+    font-size: inherit;
+    outline: none;
+}
+
+.actions{
     display: flex;
     margin-left: auto;
+    gap: 5px;
 }
 
 .task button{
     padding:5px;
     font-size: 1rem;
-    border: 1px solid #ccc;
+    border: none;
     border-radius: 5px;
+}
+
+
+.task .actions .edit {
+    background-color: rgb(76, 175, 80);
+    color: white;
+}
+
+.task .actions .delete {
+    background-color: rgb(255, 77, 77);
+    color: white;
+}
+
+.task .actions .edit:hover {
+    background-color: rgb(69, 160, 73);
+}
+
+.task .actions .delete:hover {
+    background-color: rgb(224, 68, 68);
 }
 
 

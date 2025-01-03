@@ -44,7 +44,7 @@ const TodoApp: React.FC = () => {
       .then((data: Todo[]) => setTasks(data))
       .catch((err) => console.error("Error fetching tasks:", err));
 
-    setCategories(["F", "categories", "and", "tasks", "from", "the", "backend", "on", "component", "mount","Work", "Personal", "Groceries","You", "can", "also", "fetch", "categories", "from", "the", "backend", "if", "implemented"]);
+    setCategories(["This is an extremely long sentenced merely to test overflow", "categories", "and", "tasks", "from", "the", "backend", "on", "component", "mount","Work", "Personal", "Groceries","You", "can", "also", "fetch", "categories", "from", "the", "backend", "if", "implemented"]);
   }, []); // Removed tasks dependency
 
   const handleAddTask = () => {
@@ -67,6 +67,7 @@ const TodoApp: React.FC = () => {
       .then((addedTask: Todo) => {
         setTasks((prevTasks) => [...prevTasks, addedTask]);
         setNewTask("");
+        console.log("Added new task: ", addedTask);
       })
       .catch((err) => console.error("Error adding task:", err));
   };
@@ -76,7 +77,7 @@ const TodoApp: React.FC = () => {
     if (!taskToUpdate) return;
 
     fetch(`http://localhost:5000/todos/${id}`, {
-      method: "PUT",
+      method: "PATCH",
       headers: {
         "Content-Type": "application/json",
       },
@@ -126,6 +127,7 @@ const TodoApp: React.FC = () => {
     })
       .then(() => {
         setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
+        console.log("Deleted task: ");
       })
       .catch((err) => console.error("Error deleting task:", err));
   };
@@ -134,19 +136,12 @@ const TodoApp: React.FC = () => {
     <div className="todoapp">
       {/* Sidebar */}
       <div className="sidebar">
+        <div className="categories-header"></div>
         <div className="categories">
           {categories.map((category, index) => (
             <div
               key={index}
-              style={{
-                padding: "10px",
-                marginBottom: "5px",
-                backgroundColor: selectedCategory === category ? "#d0d0d0" : "#e0e0e0",
-                fontWeight: selectedCategory === category ? "bold" : "",
-                color: selectedCategory === category ? "black" : "#444444",
-                borderRadius: "5px",
-                cursor: "pointer",
-              }}
+              className={`category${selectedCategory === category ? 'selected' : ''}`}
               onClick={() => setSelectedCategory(category)}
             >
               {category}
@@ -175,7 +170,7 @@ const TodoApp: React.FC = () => {
         )}
         <div className="task-list">
           {tasks.map((task) => (
-            <div key={task.id} className="task">
+            <div key={task.id} className="task" style={editingTaskId===task.id?{backgroundColor:"#ffffcc"}:{}}>
               <input
                 type="checkbox"
                 checked={task.completed}
@@ -194,9 +189,9 @@ const TodoApp: React.FC = () => {
               ) : (
                 <span>{task.task}</span>
               )}
-              <div className="task-buttons-container">
+              <div className="actions">
                 <button 
-                  className="task-button" 
+                  className="edit" 
                   onClick={() => editingTaskId === task.id 
                     ? handleSaveEdit(task.id) 
                     : handleStartEdit(task)
@@ -204,7 +199,7 @@ const TodoApp: React.FC = () => {
                 >
                   {editingTaskId === task.id ? 'Save' : 'Edit'}
                 </button>
-                <button className="task-button" onClick={() => handleDeleteTask(task.id)}>
+                <button className="delete" onClick={() => handleDeleteTask(task.id)}>
                   Delete
                 </button>
               </div>
