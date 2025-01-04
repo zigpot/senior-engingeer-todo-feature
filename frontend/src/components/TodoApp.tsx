@@ -13,15 +13,15 @@ interface Todo {
   patient?: string;
 }
 
-interface TodoCreate {
-  title: string;
-  description?: string;
-  deadline?: Date;
-  created_at: Date;
-  completed: boolean;
-  assignee?: string;
-  patient?: string;
-}
+// interface TodoCreate {
+//   title: string;
+//   description?: string;
+//   deadline?: Date;
+//   created_at: Date;
+//   completed: boolean;
+//   assignee?: string;
+//   patient?: string;
+// }
 
 const Modal: React.FC<{
   isOpen: boolean;
@@ -42,8 +42,8 @@ const Modal: React.FC<{
 const TodoApp: React.FC = () => {
   const [categories, setCategories] = useState<string[]>([]);
   const [tasks, setTasks] = useState<Todo[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>("All");
-  const [newTask, setNewTask] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("Tasks");
+  // const [newTask, setNewTask] = useState<string>("");
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Todo | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -53,6 +53,15 @@ const TodoApp: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filterBy, setFilterBy] = useState<'all' | 'completed' | 'uncompleted'>('all');
   const [isLoading, setIsLoading] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    taskId: number | null;
+    taskTitle: string;
+  }>({
+    isOpen: false,
+    taskId: null,
+    taskTitle: ""
+  });
 
   // Mock data for dropdowns
   const assignees = ["Dr. Smith", "Dr. Johnson", "Dr. Williams"];
@@ -60,7 +69,7 @@ const TodoApp: React.FC = () => {
 
   useEffect(() => {
     fetchTasks();
-    setCategories(["All", "Completed", "Uncompleted"]);
+    setCategories(["Tasks", "Users", "Patients"]);
   }, [sortBy, sortOrder, filterBy]); // Re-fetch when sort or filter changes
 
   const fetchTasks = async () => {
@@ -102,31 +111,31 @@ const TodoApp: React.FC = () => {
     });
   };
 
-  const handleAddTask = () => {
-    if (!newTask.trim() || !selectedCategory) return;
+  // const handleAddTask = () => {
+  //   if (!newTask.trim() || !selectedCategory) return;
 
-    const newTaskObject: TodoCreate = {
-      title: newTask,
-      description: "To be filled",
-      created_at: new Date(),
-      completed: false,
-      deadline: new Date(new Date().getTime() + 14 * 24 * 60 * 60 * 1000),
-    };
+  //   const newTaskObject: TodoCreate = {
+  //     title: newTask,
+  //     description: "To be filled",
+  //     created_at: new Date(),
+  //     completed: false,
+  //     deadline: new Date(new Date().getTime() + 14 * 24 * 60 * 60 * 1000),
+  //   };
 
-    fetch("http://localhost:5000/todos", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(newTaskObject),
-    })
-      .then((res) => res.json())
-      .then((addedTask: Todo) => {
-        setTasks((prevTasks) => [...prevTasks, addedTask]);
-        setNewTask("");
-      })
-      .catch((err) => console.error("Error adding task:", err));
-  };
+  //   fetch("http://localhost:5000/todos", {
+  //     method: "POST",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //     },
+  //     body: JSON.stringify(newTaskObject),
+  //   })
+  //     .then((res) => res.json())
+  //     .then((addedTask: Todo) => {
+  //       setTasks((prevTasks) => [...prevTasks, addedTask]);
+  //       setNewTask("");
+  //     })
+  //     .catch((err) => console.error("Error adding task:", err));
+  // };
 
   const handleToggleTask = (id: number) => {
     const taskToUpdate = tasks.find((task) => task.id === id);
@@ -193,8 +202,18 @@ const TodoApp: React.FC = () => {
     })
       .then(() => {
         setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
+        setDeleteConfirmation({ isOpen: false, taskId: null, taskTitle: "" });
       })
       .catch((err) => console.error("Error deleting task:", err));
+  };
+
+  // Add new function to handle opening delete confirmation
+  const openDeleteConfirmation = (task: Todo) => {
+    setDeleteConfirmation({
+      isOpen: true,
+      taskId: task.id,
+      taskTitle: task.title
+    });
   };
 
   const closeModal = () => {
@@ -206,32 +225,32 @@ const TodoApp: React.FC = () => {
   };
 
 
-  const sortedAndFilteredTasks = React.useMemo(() => {
-    let filteredTasks = tasks;
+  // const sortedAndFilteredTasks = React.useMemo(() => {
+  //   let filteredTasks = tasks;
     
-    // Apply filters
-    if (filterBy === 'completed') {
-      filteredTasks = tasks.filter(task => task.completed);
-    } else if (filterBy === 'uncompleted') {
-      filteredTasks = tasks.filter(task => !task.completed);
-    }
+  //   // Apply filters
+  //   if (filterBy === 'completed') {
+  //     filteredTasks = tasks.filter(task => task.completed);
+  //   } else if (filterBy === 'uncompleted') {
+  //     filteredTasks = tasks.filter(task => !task.completed);
+  //   }
 
-    // Apply sorting
-    return [...filteredTasks].sort((a, b) => {
-      switch (sortBy) {
-        case 'deadline':
-          const aTime = a.deadline ? new Date(a.deadline).getTime() : Infinity;
-          const bTime = b.deadline ? new Date(b.deadline).getTime() : Infinity;
-          return aTime - bTime;
-        case 'created_at':
-          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-        case 'title':
-          return a.title.localeCompare(b.title);
-        default:
-          return 0;
-      }
-    });
-  }, [tasks, sortBy, filterBy]);
+  //   // Apply sorting
+  //   return [...filteredTasks].sort((a, b) => {
+  //     switch (sortBy) {
+  //       case 'deadline':
+  //         const aTime = a.deadline ? new Date(a.deadline).getTime() : Infinity;
+  //         const bTime = b.deadline ? new Date(b.deadline).getTime() : Infinity;
+  //         return aTime - bTime;
+  //       case 'created_at':
+  //         return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  //       case 'title':
+  //         return a.title.localeCompare(b.title);
+  //       default:
+  //         return 0;
+  //     }
+  //   });
+  // }, [tasks, sortBy, filterBy]);
 
   return (
     <div className="todoapp">
@@ -249,15 +268,15 @@ const TodoApp: React.FC = () => {
             </div>
           ))}
         </div>
-        <div>
-          <button className="add-category" onClick={handleAddNewTask}>+</button>
-        </div>
       </div>
 
       {/* Main Content */}
       <div className="main">
         <div className="header">
           {selectedCategory}
+        </div>
+        <div>
+          <button className="add-new-task" onClick={handleAddNewTask}>+</button>
         </div>
         <div className="filters">
           <div className="sort-controls">
@@ -321,7 +340,7 @@ const TodoApp: React.FC = () => {
                   <button className="detail" onClick={() => handleShowDetail(task)}>
                     Detail
                   </button>
-                  <button className="delete" onClick={() => handleDeleteTask(task.id)}>
+                  <button className="delete" onClick={() => openDeleteConfirmation(task)}>
                     Delete
                   </button>
                 </div>
@@ -440,6 +459,39 @@ const TodoApp: React.FC = () => {
           ) : (
             <button className="edit-button" onClick={() => setIsEditMode(true)}>Edit</button>
           )}
+        </div>
+      </Modal>
+      {/* Add Delete Confirmation Modal */}
+      <Modal 
+        isOpen={deleteConfirmation.isOpen} 
+        onClose={() => setDeleteConfirmation({ isOpen: false, taskId: null, taskTitle: "" })}
+      >
+        <div className="modal-header">
+          <h2>Confirm Deletion</h2>
+          <button 
+            className="close-button" 
+            onClick={() => setDeleteConfirmation({ isOpen: false, taskId: null, taskTitle: "" })}
+          >
+            ×
+          </button>
+        </div>
+        <div className="modal-body">
+          <p>Are you sure you want to delete the task "{deleteConfirmation.taskTitle}"?</p>
+          <p>This action cannot be undone.</p>
+        </div>
+        <div className="modal-footer">
+          <button 
+            className="cancel-button" 
+            onClick={() => setDeleteConfirmation({ isOpen: false, taskId: null, taskTitle: "" })}
+          >
+            Cancel
+          </button>
+          <button 
+            className="delete-button" 
+            onClick={() => deleteConfirmation.taskId && handleDeleteTask(deleteConfirmation.taskId)}
+          >
+            Delete
+          </button>
         </div>
       </Modal>
     </div>

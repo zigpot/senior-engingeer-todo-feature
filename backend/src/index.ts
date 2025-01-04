@@ -8,6 +8,16 @@ import { Pool } from "pg";
 type SortField = 'title' | 'deadline' | 'created_at';
 type SortOrder = 'asc' | 'desc';
 type FilterStatus = 'all' | 'completed' | 'uncompleted';
+type UserRole = 'Doctor' | 'Nurse' | 'Secretary';
+
+// Add these interfaces near the top with other interfaces
+interface User {
+  id: number;
+  name: string;
+  role: UserRole;
+  doctor_number?: string;
+  created_at: Date;
+}
 
 interface TodoQueryParams {
   sort?: SortField;
@@ -248,6 +258,233 @@ app.delete("/todos/:id", async (req: Request, res: Response): Promise<void> => {
     res.status(204).send();
   } catch (error) {
     console.error("Error deleting task:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Add these types with other type definitions
+type UserSortField = 'name' | 'role' | 'created_at';
+type UserSortOrder = 'asc' | 'desc';
+
+interface UserQueryParams {
+    sort?: UserSortField;
+    order?: UserSortOrder;
+    role?: 'Doctor' | 'Nurse' | 'Secretary';
+    search?: string;
+}
+
+
+/* USER ENDPOINT */
+
+
+interface User {
+    id: number;
+    name: string;
+    role: 'Doctor' | 'Nurse' | 'Secretary';
+    doctor_number?: string;
+    created_at: Date;
+}
+
+// Get All User
+app.get("/users", async (req: Request, res: Response): Promise<void> => {
+  try {
+      const {
+          sort = 'name',
+          order = 'asc',
+          role,
+          search
+      } = req.query as UserQueryParams;
+
+      // Validate sort field
+      const validSortFields: UserSortField[] = ['name', 'role', 'created_at'];
+      if (!validSortFields.includes(sort as UserSortField)) {
+          res.status(400).json({ error: "Invalid sort field" });
+          return;
+      }
+
+      // Validate sort order
+      const validOrders: UserSortOrder[] = ['asc', 'desc'];
+      if (!validOrders.includes(order as UserSortOrder)) {
+          res.status(400).json({ error: "Invalid sort order" });
+          return;
+      }
+
+      // Build the WHERE clause for filtering and search
+      const whereConditions: string[] = [];
+      const queryParams: any[] = [];
+      let paramCount = 1;
+
+      // Add role filter if specified
+      if (role) {
+          const roles = (role as string).split(','); // Split by comma to handle multiple roles
+          const rolePlaceholders = roles.map(() => `$${paramCount++}`).join(',');
+          whereConditions.push(`role IN (${rolePlaceholders})`);
+          queryParams.push(...roles);
+      }
+
+      // Add search condition if search term is provided
+      if (search) {
+          whereConditions.push(`name ILIKE $${paramCount}`);
+          queryParams.push(`%${search}%`);
+          paramCount++;
+      }
+
+      // Combine WHERE conditions
+      const whereClause = whereConditions.length > 0
+          ? 'WHERE ' + whereConditions.join(' AND ')
+          : '';
+
+      const query = `
+          SELECT id, name, role, doctor_number, created_at 
+          FROM users 
+          ${whereClause}
+          ORDER BY ${sort} ${order}
+      `;
+
+      // const validRoles = ['Doctor', 'Nurse', 'Secretary'];
+      // const roles = (role as string).split(',');
+      // if (!roles.every(r => validRoles.includes(r))) {
+      //     res.status(400).json({ error: "Invalid role(s) specified" });
+      //     return;
+      // }
+
+      console.log('Executing query:', query, 'with params:', queryParams); // For debugging
+
+      const result = await pool.query(query, queryParams);
+      res.json(result.rows);
+  } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
+// Add user
+app.post("/users", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { name, role, doctor_number }: User = req.body;
+    
+    if (!name) {
+      res.status(400).json({ error: "Name is required" });
+      return;
+    }
+
+    const query = `
+      INSERT INTO users (name, role, created_at, doctor_number)
+      VALUES ($1, $2, CURRENT_TIMESTAMP, $3)
+      RETURNING *
+    `;
+
+    const values = [name, role, (role === 'Doctor'? doctor_number : null)];
+    const result = await pool.query(query, values);
+    
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error("Error adding user:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
+// Get single user
+app.get("/users/:id", async (req: Request, res: Response): Promise<void> => {
+  try {
+      const { id } = req.params;
+      
+      const query = `
+          SELECT id, name, role, doctor_number, created_at 
+          FROM users 
+          WHERE id = $1
+      `;
+      
+      const result = await pool.query(query, [id]);
+      
+      if (result.rows.length === 0) {
+          res.status(404).json({ error: "User not found" });
+          return;
+      }
+      
+      res.json(result.rows[0]);
+  } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ error: "Internal server error" });
+  }
+});
+// Get all users
+app.get("/users", async (req: Request, res: Response): Promise<void> => {
+  try {
+      const query = `
+          SELECT id, name, role, doctor_number, created_at 
+          FROM users 
+          ORDER BY name ASC
+      `;
+      
+      const result = await pool.query(query);
+      res.json(result.rows);
+  } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Update user
+app.put("/users/:id", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { name, role, doctor_number } = req.body;
+
+    if (!name) {
+      res.status(400).json({ error: "Name is required" });
+      return;
+    }
+
+    const query = `
+      UPDATE users 
+      SET name = $1, role = $2, doctor_number = $3
+      WHERE id = $4
+      RETURNING *
+    `;
+
+    const values = [name, role, (role === 'Doctor'? doctor_number : null), id];
+    const result = await pool.query(query, values);
+
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    // Log the successful update
+    console.log(`User with ID ${id} successfully updated:`, result.rows[0]);
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error("Error updating user:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Delete user
+app.delete("/users/:id", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    console.log(`deleting user with id: ${[id]}`);
+
+    const query = `
+      DELETE FROM users 
+      WHERE id = $1
+      RETURNING id
+    `;
+
+    const result = await pool.query(query, [id]);
+
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    console.error("Error deleting user:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

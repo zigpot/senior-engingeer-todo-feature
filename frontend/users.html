@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User List App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 25%;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+        }
+
+        .sidebar .categories {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+        }
+
+        .category {
+            padding: 10px;
+            margin-bottom: 5px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .category:hover {
+            background-color: #d0d0d0;
+        }
+
+        .add-category {
+            padding: 10px;
+            text-align: center;
+            background-color: #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.5rem;
+        }
+
+        .add-category:hover {
+            background-color: #bbb;
+        }
+
+        /* Main area */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+            background-color: #fff;
+        }
+
+        .main .header {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        .main .add-user {
+            margin-bottom: 1rem;
+        }
+
+        .add-user input {
+            width: 100%;
+            padding: 10px;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .user-list {
+            flex: 1;
+            overflow-y: auto;
+            border-top: 1px solid #ccc;
+            margin-top: 1rem;
+            padding-top: 1rem;
+        }
+
+        .user {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        .user span {
+            margin-bottom: 5px;
+        }
+
+        .user .role {
+            font-weight: bold;
+        }
+
+        .user .doctor-number {
+            font-style: italic;
+            color: #555;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: 20%;
+                flex-direction: row;
+                overflow-x: auto;
+                padding: 0.5rem;
+            }
+
+            .sidebar .categories {
+                flex: unset;
+                display: flex;
+                flex-direction: row;
+                margin-bottom: 0;
+            }
+
+            .category {
+                margin-right: 5px;
+                margin-bottom: 0;
+            }
+
+            .main {
+                height: 80%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="categories">
+            <div class="category">Doctors</div>
+            <div class="category">Nurses</div>
+            <div class="category">Secretaries</div>
+        </div>
+        <div class="add-category">+</div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main">
+        <div class="header">Selected Role</div>
+        <div class="add-user">
+            <input type="text" placeholder="Add a new user">
+        </div>
+        <div class="user-list">
+            <div class="user">
+                <span class="name">Dr. John Smith</span>
+                <span class="role">Role: Doctor</span>
+                <span class="doctor-number">Doctor Number: D12345</span>
+            </div>
+            <div class="user">
+                <span class="name">Jane Doe</span>
+                <span class="role">Role: Nurse</span>
+            </div>
+            <div class="user">
+                <span class="name">Alice Johnson</span>
+                <span class="role">Role: Secretary</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
