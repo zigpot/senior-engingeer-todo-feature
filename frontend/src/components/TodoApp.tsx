@@ -49,21 +49,41 @@ const TodoApp: React.FC = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedTask, setEditedTask] = useState<Todo | null>(null);
   const [modalMode, setModalMode] = useState<'view' | 'edit' | 'create'>('view');
-  const [sortBy, setSortBy] = useState<'deadline' | 'created_at' | 'title'>('deadline');
+  const [sortBy, setSortBy] = useState<'deadline' | 'created_at' | 'title'>('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filterBy, setFilterBy] = useState<'all' | 'completed' | 'uncompleted'>('all');
+  const [isLoading, setIsLoading] = useState(false);
 
   // Mock data for dropdowns
   const assignees = ["Dr. Smith", "Dr. Johnson", "Dr. Williams"];
   const patients = ["John Doe", "Jane Smith", "Robert Brown"];
 
   useEffect(() => {
-    fetch("http://localhost:5000/todos")
-      .then((res) => res.json())
-      .then((data: Todo[]) => setTasks(data))
-      .catch((err) => console.error("Error fetching tasks:", err));
-
+    fetchTasks();
     setCategories(["All", "Completed", "Uncompleted"]);
-  }, []);
+  }, [sortBy, sortOrder, filterBy]); // Re-fetch when sort or filter changes
+
+  const fetchTasks = async () => {
+    try {
+      setIsLoading(true);
+      const queryParams = new URLSearchParams({
+        sort: sortBy,
+        order: sortOrder,
+        status: filterBy
+      });
+
+      const response = await fetch(`http://localhost:5000/todos?${queryParams}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch tasks');
+      }
+      const data: Todo[] = await response.json();
+      setTasks(data);
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleAddNewTask = () => {
     setModalMode('create');
@@ -239,57 +259,75 @@ const TodoApp: React.FC = () => {
         <div className="header">
           {selectedCategory}
         </div>
-          <div className="filters">
+        <div className="filters">
+          <div className="sort-controls">
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as 'deadline' | 'created_at' | 'title')}>
+              onChange={(e) => setSortBy(e.target.value as 'deadline' | 'created_at' | 'title')}
+            >
               <option value="title">Sort by Title</option>
               <option value="created_at">Sort by Created Date</option>
               <option value="deadline">Sort by Deadline</option>
             </select>
             <select
-              value={filterBy}
-              onChange={(e) => setFilterBy(e.target.value as 'all' | 'completed' | 'uncompleted')}>
-              <option value="all">All Tasks</option>
-              <option value="completed">Completed</option>
-              <option value="uncompleted">Uncompleted</option>
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+            >
+              <option value="asc">Ascending</option>
+              <option value="desc">Descending</option>
             </select>
           </div>
+          <select
+            value={filterBy}
+            onChange={(e) => setFilterBy(e.target.value as 'all' | 'completed' | 'uncompleted')}
+          >
+            <option value="all">All Tasks</option>
+            <option value="completed">Completed</option>
+            <option value="uncompleted">Uncompleted</option>
+          </select>
+        </div>
+
         <div className="task-list">
-          {sortedAndFilteredTasks.map((task) => (
-            <div key={task.id} className="task">
-              <Checkbox
-                checked={task.completed}
-                onChange={() => handleToggleTask(task.id)}
-                className="task"
-              />
-              <div>
-                <span
-                  style={{
-                    display: 'block',
-                    color: task.completed ? 'gray' : 'black'
-                  }}
-                >
-                  {task.title}
-                </span>
-                <span
-                  style={{
-                    display: 'block', fontSize: '15px', fontWeight: '100',
-                    color: task.completed ? '#a1a1a1' : 'gray'
-                    }}>
-                  {task.description}
-                </span>
+          {isLoading ? (
+            <div className="loading">Loading...</div>
+          ) : tasks.length === 0 ? (
+            <div className="no-tasks">No tasks found</div>
+          ) : (
+            tasks.map((task) => (
+              <div key={task.id} className="task">
+                <Checkbox
+                  checked={task.completed}
+                  onChange={() => handleToggleTask(task.id)}
+                  className="task"
+                />
+                <div>
+                  <span
+                    style={{
+                      display: 'block',
+                      color: task.completed ? 'gray' : 'black'
+                    }}
+                  >
+                    {task.title}
+                  </span>
+                  <span
+                    style={{
+                      display: 'block', fontSize: '15px', fontWeight: '100',
+                      color: task.completed ? '#a1a1a1' : 'gray'
+                      }}>
+                    {task.description}
+                  </span>
+                </div>
+                <div className="actions">
+                  <button className="detail" onClick={() => handleShowDetail(task)}>
+                    Detail
+                  </button>
+                  <button className="delete" onClick={() => handleDeleteTask(task.id)}>
+                    Delete
+                  </button>
+                </div>
               </div>
-              <div className="actions">
-                <button className="detail" onClick={() => handleShowDetail(task)}>
-                  Detail
-                </button>
-                <button className="delete" onClick={() => handleDeleteTask(task.id)}>
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
 
