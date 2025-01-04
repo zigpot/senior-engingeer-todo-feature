@@ -40,6 +40,21 @@ interface TodoCreate {
   description?: string;
   deadline?: Date;
 }
+// Add these types with other type definitions
+type PatientSortField = 'name' | 'created_at';
+type PatientSortOrder = 'asc' | 'desc';
+
+interface PatientQueryParams {
+    sort?: PatientSortField;
+    order?: PatientSortOrder;
+    search?: string;
+}
+
+interface Patient {
+    id: number;
+    name: string;
+    created_at: Date;
+}
 
 // Initialize express app
 const app = express();
@@ -488,6 +503,175 @@ app.delete("/users/:id", async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+// Get All Patients with filtering and sorting
+app.get("/patients", async (req: Request, res: Response): Promise<void> => {
+    try {
+        const {
+            sort = 'name',
+            order = 'asc',
+            search
+        } = req.query as PatientQueryParams;
+
+        // Validate sort field
+        const validSortFields: PatientSortField[] = ['name', 'created_at'];
+        if (!validSortFields.includes(sort as PatientSortField)) {
+            res.status(400).json({ error: "Invalid sort field" });
+            return;
+        }
+
+        // Validate sort order
+        const validOrders: PatientSortOrder[] = ['asc', 'desc'];
+        if (!validOrders.includes(order as PatientSortOrder)) {
+            res.status(400).json({ error: "Invalid sort order" });
+            return;
+        }
+
+        // Build the WHERE clause for search
+        const whereConditions: string[] = [];
+        const queryParams: any[] = [];
+        let paramCount = 1;
+
+        // Add search condition if search term is provided
+        if (search) {
+            whereConditions.push(`name ILIKE $${paramCount}`);
+            queryParams.push(`%${search}%`);
+            paramCount++;
+        }
+
+        // Combine WHERE conditions
+        const whereClause = whereConditions.length > 0
+            ? 'WHERE ' + whereConditions.join(' AND ')
+            : '';
+
+        const query = `
+            SELECT id, name, created_at 
+            FROM patients 
+            ${whereClause}
+            ORDER BY ${sort} ${order}
+        `;
+
+        console.log('Executing query:', query, 'with params:', queryParams); // For debugging
+
+        const result = await pool.query(query, queryParams);
+        res.json(result.rows);
+    } catch (error) {
+        console.error("Error fetching patients:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// Get single patient by ID
+app.get("/patients/:id", async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+        
+        const query = `
+            SELECT id, name, created_at 
+            FROM patients 
+            WHERE id = $1
+        `;
+        
+        const result = await pool.query(query, [id]);
+        
+        if (result.rows.length === 0) {
+            res.status(404).json({ error: "Patient not found" });
+            return;
+        }
+        
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error("Error fetching patient:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+// Add patient
+app.post("/patients", async (req: Request, res: Response): Promise<void> => {
+  try {
+      const { name }: Patient = req.body;
+      
+      if (!name) {
+          res.status(400).json({ error: "Name is required" });
+          return;
+      }
+
+      const query = `
+          INSERT INTO patients (name, created_at)
+          VALUES ($1, CURRENT_TIMESTAMP)
+          RETURNING *
+      `;
+
+      const values = [name];
+      const result = await pool.query(query, values);
+      
+      console.log('Patient created:', result.rows[0]); // For debugging
+      res.status(201).json(result.rows[0]);
+  } catch (error) {
+      console.error("Error adding patient:", error);
+      res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Update patient
+app.put("/patients/:id", async (req: Request, res: Response): Promise<void> => {
+  try {
+      const { id } = req.params;
+      const { name } = req.body;
+
+      if (!name) {
+          res.status(400).json({ error: "Name is required" });
+          return;
+      }
+
+      const query = `
+          UPDATE patients 
+          SET name = $1
+          WHERE id = $2
+          RETURNING *
+      `;
+
+      const values = [name, id];
+      const result = await pool.query(query, values);
+
+      if (result.rows.length === 0) {
+          res.status(404).json({ error: "Patient not found" });
+          return;
+      }
+
+      console.log(`Patient with ID ${id} successfully updated:`, result.rows[0]); // For debugging
+      res.json(result.rows[0]);
+  } catch (error) {
+      console.error("Error updating patient:", error);
+      res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
+// Delete patient
+app.delete("/patients/:id", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const query = `
+      DELETE FROM patients 
+      WHERE id = $1
+      RETURNING id
+    `;
+
+    const result = await pool.query(query, [id]);
+
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: "Patient not found" });
+      return;
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    console.error("Error deleting patient:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
