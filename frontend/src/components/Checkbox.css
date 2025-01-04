@@ -1,0 +1,19 @@
+
+input[type="checkbox"] {
+    /* Default styles for the checkbox */
+    appearance: none;
+    width: 20px;
+    height: 14px;
+    border: 2px solid #ccc;
+    border-radius: 0px;
+    background-color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    transform: scale(0.6);
+  }
+  
+  input[type="checkbox"]:checked {
+    /* Modify the checked state to gray instead of blue */
+    background-color: #808080; /* Gray */
+    border: 2px solid #808080; /* Gray border */
+  }

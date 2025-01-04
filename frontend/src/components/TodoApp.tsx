@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./TodoApp.css";
+import Checkbox from "./Checkbox";
 
 interface Todo {
   id: number;
@@ -41,12 +42,15 @@ const Modal: React.FC<{
 const TodoApp: React.FC = () => {
   const [categories, setCategories] = useState<string[]>([]);
   const [tasks, setTasks] = useState<Todo[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [newTask, setNewTask] = useState<string>("");
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Todo | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedTask, setEditedTask] = useState<Todo | null>(null);
+  const [modalMode, setModalMode] = useState<'view' | 'edit' | 'create'>('view');
+  const [sortBy, setSortBy] = useState<'deadline' | 'created_at' | 'title'>('deadline');
+  const [filterBy, setFilterBy] = useState<'all' | 'completed' | 'uncompleted'>('all');
 
   // Mock data for dropdowns
   const assignees = ["Dr. Smith", "Dr. Johnson", "Dr. Williams"];
@@ -58,8 +62,25 @@ const TodoApp: React.FC = () => {
       .then((data: Todo[]) => setTasks(data))
       .catch((err) => console.error("Error fetching tasks:", err));
 
-    setCategories(["Work", "Personal", "Groceries"]);
+    setCategories(["All", "Completed", "Uncompleted"]);
   }, []);
+
+  const handleAddNewTask = () => {
+    setModalMode('create');
+    setIsDetailModalOpen(true);
+    setIsEditMode(true);
+    // Set default values for new task
+    setEditedTask({
+      id: 0, // temporary ID
+      title: '',
+      description: '',
+      deadline: new Date(),
+      created_at: new Date(),
+      completed: false,
+      assignee: '',
+      patient: ''
+    });
+  };
 
   const handleAddTask = () => {
     if (!newTask.trim() || !selectedCategory) return;
@@ -112,13 +133,20 @@ const TodoApp: React.FC = () => {
     setEditedTask(task);
     setIsDetailModalOpen(true);
     setIsEditMode(false);
+    setModalMode('view');
   };
 
   const handleSaveEdit = () => {
     if (!editedTask || !editedTask.title.trim()) return;
 
-    fetch(`http://localhost:5000/todos/${editedTask.id}`, {
-      method: "PUT",
+    const url = modalMode === 'create' 
+      ? "http://localhost:5000/todos"
+      : `http://localhost:5000/todos/${editedTask.id}`;
+    
+    const method = modalMode === 'create' ? 'POST' : 'PUT';
+
+    fetch(url, {
+      method: method,
       headers: {
         "Content-Type": "application/json",
       },
@@ -126,13 +154,17 @@ const TodoApp: React.FC = () => {
     })
       .then((res) => res.json())
       .then((updatedTask: Todo) => {
-        setTasks((prevTasks) =>
-          prevTasks.map((task) => (task.id === editedTask.id ? updatedTask : task))
-        );
-        setIsEditMode(false);
-        setSelectedTask(updatedTask);
+        if (modalMode === 'create') {
+          setTasks(prevTasks => [...prevTasks, updatedTask]);
+        } else {
+          setTasks((prevTasks) =>
+            prevTasks.map((task) => (task.id === editedTask.id ? updatedTask : task))
+          );
+          setSelectedTask(updatedTask);
+        }
+        closeModal();
       })
-      .catch((err) => console.error("Error updating task:", err));
+      .catch((err) => console.error("Error saving task:", err));
   };
 
   const handleDeleteTask = (id: number) => {
@@ -150,7 +182,36 @@ const TodoApp: React.FC = () => {
     setIsEditMode(false);
     setSelectedTask(null);
     setEditedTask(null);
+    setModalMode('view');
   };
+
+
+  const sortedAndFilteredTasks = React.useMemo(() => {
+    let filteredTasks = tasks;
+    
+    // Apply filters
+    if (filterBy === 'completed') {
+      filteredTasks = tasks.filter(task => task.completed);
+    } else if (filterBy === 'uncompleted') {
+      filteredTasks = tasks.filter(task => !task.completed);
+    }
+
+    // Apply sorting
+    return [...filteredTasks].sort((a, b) => {
+      switch (sortBy) {
+        case 'deadline':
+          const aTime = a.deadline ? new Date(a.deadline).getTime() : Infinity;
+          const bTime = b.deadline ? new Date(b.deadline).getTime() : Infinity;
+          return aTime - bTime;
+        case 'created_at':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'title':
+          return a.title.localeCompare(b.title);
+        default:
+          return 0;
+      }
+    });
+  }, [tasks, sortBy, filterBy]);
 
   return (
     <div className="todoapp">
@@ -168,38 +229,54 @@ const TodoApp: React.FC = () => {
             </div>
           ))}
         </div>
-        <div><button className="add-category">+</button></div>
+        <div>
+          <button className="add-category" onClick={handleAddNewTask}>+</button>
+        </div>
       </div>
 
       {/* Main Content */}
       <div className="main">
         <div className="header">
-          {selectedCategory || "Select a Category"}
+          {selectedCategory}
         </div>
-        {selectedCategory && (
-          <div className="add-task">
-            <input
-              type="text"
-              value={newTask}
-              placeholder="Add a new task"
-              onChange={(e) => setNewTask(e.target.value)}
-              className="add-task"
-            />
-            <button className="add-task" onClick={handleAddTask}>Add</button>
+          <div className="filters">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'deadline' | 'created_at' | 'title')}>
+              <option value="title">Sort by Title</option>
+              <option value="created_at">Sort by Created Date</option>
+              <option value="deadline">Sort by Deadline</option>
+            </select>
+            <select
+              value={filterBy}
+              onChange={(e) => setFilterBy(e.target.value as 'all' | 'completed' | 'uncompleted')}>
+              <option value="all">All Tasks</option>
+              <option value="completed">Completed</option>
+              <option value="uncompleted">Uncompleted</option>
+            </select>
           </div>
-        )}
         <div className="task-list">
-          {tasks.map((task) => (
+          {sortedAndFilteredTasks.map((task) => (
             <div key={task.id} className="task">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={task.completed}
                 onChange={() => handleToggleTask(task.id)}
                 className="task"
               />
               <div>
-                <span style={{ display: 'block' }}>{task.title}</span>
-                <span style={{ display: 'block', fontSize: '15px', fontWeight: '100', color: '#6d6d6d' }}>
+                <span
+                  style={{
+                    display: 'block',
+                    color: task.completed ? 'gray' : 'black'
+                  }}
+                >
+                  {task.title}
+                </span>
+                <span
+                  style={{
+                    display: 'block', fontSize: '15px', fontWeight: '100',
+                    color: task.completed ? '#a1a1a1' : 'gray'
+                    }}>
                   {task.description}
                 </span>
               </div>
@@ -219,7 +296,13 @@ const TodoApp: React.FC = () => {
       {/* Detail/Edit Modal */}
       <Modal isOpen={isDetailModalOpen} onClose={closeModal}>
         <div className="modal-header">
-          <h2>{isEditMode ? 'Edit Task' : 'Task Details'}</h2>
+          <h2>
+            {modalMode === 'create' 
+              ? 'Create New Task' 
+              : isEditMode 
+                ? 'Edit Task' 
+                : 'Task Details'}
+          </h2>
           <button className="close-button" onClick={closeModal}>×</button>
         </div>
         <div className="modal-body">
@@ -311,7 +394,9 @@ const TodoApp: React.FC = () => {
         <div className="modal-footer">
           {isEditMode ? (
             <>
-              <button className="cancel-button" onClick={() => setIsEditMode(false)}>Cancel</button>
+              <button className="cancel-button" onClick={() => modalMode === 'create' ? closeModal() : setIsEditMode(false)}>
+                Cancel
+              </button>
               <button className="save-button" onClick={handleSaveEdit}>Save changes</button>
             </>
           ) : (

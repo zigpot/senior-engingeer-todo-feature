@@ -4,6 +4,17 @@ import cors from "cors";
 import { Request, Response } from "express";
 import { Pool } from "pg";
 
+// Add these types at the top with other interfaces
+type SortField = 'title' | 'deadline' | 'created_at';
+type SortOrder = 'asc' | 'desc';
+type FilterStatus = 'all' | 'completed' | 'uncompleted';
+
+interface TodoQueryParams {
+  sort?: SortField;
+  order?: SortOrder;
+  status?: FilterStatus;
+}
+
 // Define interfaces
 interface Todo {
   id: number;
@@ -70,11 +81,58 @@ app.post("/todos", async (req: Request, res: Response): Promise<void> => {
 // Get all tasks
 app.get("/todos", async (req: Request, res: Response): Promise<void> => {
   try {
+    const { 
+      sort = 'created_at',
+      order = 'desc',
+      status = 'all'
+    } = req.query as TodoQueryParams;
+
+    // Build the WHERE clause for filtering
+    let whereClause = '';
+    if (status === 'completed') {
+      whereClause = 'WHERE completed = true';
+    } else if (status === 'uncompleted') {
+      whereClause = 'WHERE completed = false';
+    }
+
+    // Validate sort field
+    const validSortFields: SortField[] = ['title', 'deadline', 'created_at'];
+    if (!validSortFields.includes(sort as SortField)) {
+      res.status(400).json({ error: "Invalid sort field" });
+      return;
+    }
+
+    // Validate sort order
+    const validOrders: SortOrder[] = ['asc', 'desc'];
+    if (!validOrders.includes(order as SortOrder)) {
+      res.status(400).json({ error: "Invalid sort order" });
+      return;
+    }
+
+    // Handle NULL values in sorting
+    let orderByClause = '';
+    if (sort === 'deadline') {
+      // Put NULL values at the end regardless of sort order
+      orderByClause = `
+        ORDER BY 
+          CASE 
+            WHEN deadline IS NULL THEN 1 
+            ELSE 0 
+          END,
+          deadline ${order}
+      `;
+    } else {
+      orderByClause = `ORDER BY ${sort} ${order}`;
+    }
+
     const query = `
       SELECT * FROM todos 
-      ORDER BY created_at DESC
+      ${whereClause}
+      ${orderByClause}
     `;
     
+    console.log('Executing query:', query); // For debugging
+
     const result = await pool.query(query);
     res.json(result.rows);
   } catch (error) {

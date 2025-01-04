@@ -117,11 +117,9 @@
     display: flex;
     align-items: center;
     margin-bottom: 10px;
-}
-
-.task input[type="checkbox"] {
-    margin-right: 10px;
-    size: 20px;
+    border: 1px solid #bbb;
+    border-radius: 5px;
+    padding: 10px;
 }
 
 .task input[type="text"] {
