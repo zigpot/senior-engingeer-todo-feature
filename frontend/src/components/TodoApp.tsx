@@ -3,6 +3,7 @@ import "./TodoApp.css";
 import Checkbox from "./Checkbox";
 import { Todo } from "../types/models";
 import { Modal } from "./Modal";
+import { API_ENDPOINTS } from "../config";
 
 const TodoApp: React.FC = () => {
   const [tasks, setTasks] = useState<Todo[]>([]);
@@ -47,7 +48,7 @@ const TodoApp: React.FC = () => {
         queryParams.append('search', searchTerm);
       }
 
-      const response = await fetch(`http://localhost:5000/todos?${queryParams}`);
+      const response = await fetch(`${API_ENDPOINTS.TODOS}?${queryParams}`);
       if (!response.ok) {
         throw new Error('Failed to fetch tasks');
       }
@@ -81,7 +82,7 @@ const TodoApp: React.FC = () => {
     const taskToUpdate = tasks.find((task) => task.id === id);
     if (!taskToUpdate) return;
 
-    fetch(`http://localhost:5000/todos/${id}/toggle`, {
+    fetch(`${API_ENDPOINTS.TODOS}/${id}/toggle`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -109,8 +110,8 @@ const TodoApp: React.FC = () => {
     if (!editedTask || !editedTask.title.trim()) return;
 
     const url = modalMode === 'create' 
-      ? "http://localhost:5000/todos"
-      : `http://localhost:5000/todos/${editedTask.id}`;
+      ? API_ENDPOINTS.TODOS
+      : `${API_ENDPOINTS.TODOS}/${editedTask.id}`;
     
     const method = modalMode === 'create' ? 'POST' : 'PUT';
 
@@ -137,7 +138,7 @@ const TodoApp: React.FC = () => {
   };
 
   const handleDeleteTask = (id: number) => {
-    fetch(`http://localhost:5000/todos/${id}`, {
+    fetch(`${API_ENDPOINTS.TODOS}/${id}`, {
       method: "DELETE",
     })
       .then(() => {

@@ -3,6 +3,7 @@ import "./Users.css";
 import { User } from "../types/models";
 import { Modal } from "./Modal";
 import Checkbox from "./Checkbox";
+import { API_ENDPOINTS } from "../config";
 
 const Users: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -53,7 +54,7 @@ const Users: React.FC = () => {
       queryParams.append('sort', sortField);
       queryParams.append('order', sortOrder);
   
-      const response = await fetch(`http://localhost:5000/users?${queryParams}`);
+      const response = await fetch(`${API_ENDPOINTS.USERS}?${queryParams}`);
       if (!response.ok) {
         throw new Error('Failed to fetch users');
       }
@@ -100,8 +101,8 @@ const Users: React.FC = () => {
     if (!editedUser || !editedUser.name.trim()) return;
 
     const url = modalMode === 'create' 
-      ? "http://localhost:5000/users"
-      : `http://localhost:5000/users/${editedUser.id}`;
+      ? API_ENDPOINTS.USERS
+      : `${API_ENDPOINTS.USERS}/${editedUser.id}`;
     
     const method = modalMode === 'create' ? 'POST' : 'PUT';
 
@@ -128,7 +129,7 @@ const Users: React.FC = () => {
   };
   
   const handleDeleteUser = (id: number) => {
-    fetch(`http://localhost:5000/users/${id}`, {
+    fetch(`${API_ENDPOINTS.USERS}/${id}`, {
       method: "DELETE",
     })
       .then(() => {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Patient } from "../types/models";
 import { Modal } from "./Modal";
 import './Patients.css';
+import { API_ENDPOINTS } from "../config";
 
 const Patients: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -41,7 +42,7 @@ const Patients: React.FC = () => {
       queryParams.append('sort', sortField);
       queryParams.append('order', sortOrder);
 
-      const response = await fetch(`http://localhost:5000/patients?${queryParams}`);
+      const response = await fetch(`${API_ENDPOINTS.PATIENTS}?${queryParams}`);
       if (!response.ok) {
         throw new Error('Failed to fetch patients');
       }
@@ -77,8 +78,8 @@ const Patients: React.FC = () => {
     if (!editedPatient || !editedPatient.name.trim()) return;
 
     const url = modalMode === 'create'
-      ? "http://localhost:5000/patients"
-      : `http://localhost:5000/patients/${editedPatient.id}`;
+      ? API_ENDPOINTS.PATIENTS
+      : `${API_ENDPOINTS.PATIENTS}/${editedPatient.id}`;
 
     const method = modalMode === 'create' ? 'POST' : 'PUT';
 
@@ -104,7 +105,7 @@ const Patients: React.FC = () => {
   };
 
   const handleDeletePatient = (id: number) => {
-    fetch(`http://localhost:5000/patients/${id}`, {
+    fetch(`${API_ENDPOINTS.PATIENTS}/${id}`, {
       method: "DELETE",
     })
       .then(() => {
