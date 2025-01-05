@@ -164,22 +164,6 @@ const TodoApp: React.FC = () => {
 
   return (
     <div className="todoapp">
-      {/* Sidebar */}
-      <div className="sidebar">
-        <div className="categories-header"></div>
-        <div className="categories">
-          {categories.map((category, index) => (
-            <div
-              key={index}
-              className={`category${selectedCategory === category ? ' selected' : ''}`}
-              onClick={() => setSelectedCategory(category)}
-            >
-              {category}
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="main">
         <div className="header">

@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
-import "./Patients.css";
+import React, { useState, useEffect } from "react";
 import { Patient } from "../types/models";
 import { Modal } from "./Modal";
+import './Patients.css';
 
 const Patients: React.FC = () => {
   const [categories, setCategories] = useState<string[]>([]);
@@ -30,20 +30,20 @@ const Patients: React.FC = () => {
     fetchPatients();
     setCategories(["Tasks", "Users", "Patients"]);
   }, [searchTerm, sortField, sortOrder]);
-  
+
   const fetchPatients = async () => {
     try {
       setIsLoading(true);
-      
+
       const queryParams = new URLSearchParams();
-      
+
       if (searchTerm) {
         queryParams.append('search', searchTerm);
       }
-      
+
       queryParams.append('sort', sortField);
       queryParams.append('order', sortOrder);
-  
+
       const response = await fetch(`http://localhost:5000/patients?${queryParams}`);
       if (!response.ok) {
         throw new Error('Failed to fetch patients');
@@ -79,10 +79,10 @@ const Patients: React.FC = () => {
   const handleSaveEdit = () => {
     if (!editedPatient || !editedPatient.name.trim()) return;
 
-    const url = modalMode === 'create' 
+    const url = modalMode === 'create'
       ? "http://localhost:5000/patients"
       : `http://localhost:5000/patients/${editedPatient.id}`;
-    
+
     const method = modalMode === 'create' ? 'POST' : 'PUT';
 
     fetch(url, {
@@ -97,8 +97,7 @@ const Patients: React.FC = () => {
         if (modalMode === 'create') {
           setPatients(prevPatients => [...prevPatients, updatedPatient]);
         } else {
-          setPatients((prevPatients) =>
-            prevPatients.map((patient) => (patient.id === editedPatient.id ? updatedPatient : patient))
+          setPatients((prevPatients) => prevPatients.map((patient) => (patient.id === editedPatient.id ? updatedPatient : patient))
           );
           setSelectedPatient(updatedPatient);
         }
@@ -106,7 +105,7 @@ const Patients: React.FC = () => {
       })
       .catch((err) => console.error("Error saving patient:", err));
   };
-  
+
   const handleDeletePatient = (id: number) => {
     fetch(`http://localhost:5000/patients/${id}`, {
       method: "DELETE",
@@ -136,28 +135,12 @@ const Patients: React.FC = () => {
 
   return (
     <div className="patients">
-    {/* Sidebar */}
-    <div className="sidebar">
-      <div className="categories-header"></div>
-      <div className="categories">
-        {categories.map((category, index) => (
-          <div
-            key={index}
-            className={`category${selectedCategory === category ? 'selected' : ''}`}
-            onClick={() => setSelectedCategory(category)}
-          >
-            {category}
-          </div>
-        ))}
-      </div>
-    </div>
-
       <div className="main">
         <div className="header">
           <span>Patient Management</span>
           <button onClick={handleAddNewPatient} className="add-patient-button">+</button>
         </div>
-        
+
         <div className="filters">
           <div className="search-sort-order">
             <input
@@ -165,8 +148,7 @@ const Patients: React.FC = () => {
               placeholder="Search patients..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
-            />
+              className="search-input" />
             <select
               value={sortField}
               onChange={(e) => setSortField(e.target.value as 'name' | 'created_at')}
@@ -175,7 +157,7 @@ const Patients: React.FC = () => {
               <option value="name">Sort by Name</option>
               <option value="created_at">Sort by Date</option>
             </select>
-            
+
             <select
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
@@ -231,10 +213,8 @@ const Patients: React.FC = () => {
                 id="name"
                 type="text"
                 value={editedPatient?.name || ''}
-                onChange={(e) => setEditedPatient(prev =>
-                  prev ? { ...prev, name: e.target.value } : null
-                )}
-              />
+                onChange={(e) => setEditedPatient(prev => prev ? { ...prev, name: e.target.value } : null
+                )} />
             ) : (
               <div className="detail-field">{selectedPatient?.name}</div>
             )}
@@ -297,6 +277,6 @@ const Patients: React.FC = () => {
       </Modal>
     </div>
   );
-}
+};
 
 export default Patients;
