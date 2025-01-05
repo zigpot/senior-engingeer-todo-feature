@@ -200,13 +200,12 @@ const Users: React.FC = () => {
             <span className="filter-label">Filter by Role:</span>
             <div className="checkbox-group">
               {roles.map(role => (
-                <label key={role} className="checkbox-label">
-                  <Checkbox
-                    checked={selectedRoles.includes(role)}
-                    onChange={() => handleRoleToggle(role)}
-                  />
+                  <button
+                    onClick={() => handleRoleToggle(role)}
+                    className={`checkbox-button${selectedRoles.includes(role)?'-clicked':''}`}
+                  >
                   {role}
-                </label>
+                    </button>
               ))}
             </div>
           </div>

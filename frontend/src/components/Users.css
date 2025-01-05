@@ -325,11 +325,26 @@
     gap: 1rem;
   }
   
-  .checkbox-label {
+  .checkbox-button {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     cursor: pointer;
+    background-color: #ddd;
+    border: none;
+    padding: 2px;
+    border-radius: 2px;
+  }
+  
+  .checkbox-button-clicked {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    background-color: #bbb;
+    border: none;
+    padding: 2px;
+    border-radius: 2px;
   }
   
   .checkbox-label input[type="checkbox"] {
