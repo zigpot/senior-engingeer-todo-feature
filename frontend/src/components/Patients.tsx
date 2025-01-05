@@ -1,8 +1,22 @@
 import React, { useState, useEffect } from "react";
-import { Patient } from "../types/models";
+//import { Patient } from "../types/models";
 import { Modal } from "./Modal";
 import './Patients.css';
 import { API_ENDPOINTS } from "../config";
+
+
+interface Doctor {
+  id: number;
+  name: string;
+  doctor_number: string;
+}
+
+interface Patient {
+  id: number;
+  name: string;
+  created_at: Date;
+  doctors: Doctor[];
+}
 
 const Patients: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -12,6 +26,8 @@ const Patients: React.FC = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedPatient, setEditedPatient] = useState<Patient | null>(null);
   const [modalMode, setModalMode] = useState<'view' | 'edit' | 'create'>('view');
+  const [availableDoctors, setAvailableDoctors] = useState<Doctor[]>([]);
+  const [selectedDoctorId, setSelectedDoctorId] = useState<number | ''>('');
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean;
     patientId: number | null;
@@ -27,34 +43,88 @@ const Patients: React.FC = () => {
 
   useEffect(() => {
     fetchPatients();
+    fetchAvailableDoctors();
   }, [searchTerm, sortField, sortOrder]);
+
+  const fetchAvailableDoctors = async () => {
+    try {
+      const response = await fetch(`${API_ENDPOINTS.USERS}?role=Doctor`);
+      if (!response.ok) throw new Error('Failed to fetch doctors');
+      const doctors: Doctor[] = await response.json();
+      setAvailableDoctors(doctors);
+    } catch (error) {
+      console.error("Error fetching doctors:", error);
+    }
+  };
+
+  const fetchPatientDoctors = async (patientId: number) => {
+    try {
+      const response = await fetch(`${API_ENDPOINTS.PATIENTS}/${patientId}/doctors`);
+      if (!response.ok) throw new Error('Failed to fetch patient doctors');
+      const doctors: Doctor[] = await response.json();
+      return doctors;
+    } catch (error) {
+      console.error("Error fetching patient doctors:", error);
+      return [];
+    }
+  };
+
+  // const fetchPatients = async () => {
+  //   try {
+  //     setIsLoading(true);
+
+  //     const queryParams = new URLSearchParams();
+
+  //     if (searchTerm) {
+  //       queryParams.append('search', searchTerm);
+  //     }
+
+  //     queryParams.append('sort', sortField);
+  //     queryParams.append('order', sortOrder);
+
+  //     const response = await fetch(`${API_ENDPOINTS.PATIENTS}?${queryParams}`);
+  //     if (!response.ok) {
+  //       throw new Error('Failed to fetch patients');
+  //     }
+  //     const data: Patient[] = await response.json();
+  //     setPatients(data);
+  //   } catch (error) {
+  //     console.error("Error fetching patients:", error);
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
 
   const fetchPatients = async () => {
     try {
       setIsLoading(true);
-
-      const queryParams = new URLSearchParams();
-
-      if (searchTerm) {
-        queryParams.append('search', searchTerm);
-      }
-
-      queryParams.append('sort', sortField);
-      queryParams.append('order', sortOrder);
+      const queryParams = new URLSearchParams({
+        search: searchTerm,
+        sort: sortField,
+        order: sortOrder,
+      });
 
       const response = await fetch(`${API_ENDPOINTS.PATIENTS}?${queryParams}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch patients');
-      }
-      const data: Patient[] = await response.json();
-      setPatients(data);
+      if (!response.ok) throw new Error('Failed to fetch patients');
+      const patientsData: Patient[] = await response.json();
+      
+      // Fetch doctors for each patient
+      const patientsWithDoctors = await Promise.all(
+        patientsData.map(async (patient) => ({
+          ...patient,
+          doctors: await fetchPatientDoctors(patient.id),
+        }))
+      );
+      
+      setPatients(patientsWithDoctors);
     } catch (error) {
       console.error("Error fetching patients:", error);
     } finally {
       setIsLoading(false);
     }
   };
-
+  
   const handleAddNewPatient = () => {
     setModalMode('create');
     setIsDetailModalOpen(true);
@@ -62,18 +132,78 @@ const Patients: React.FC = () => {
     setEditedPatient({
       id: 0,
       name: '',
-      created_at: new Date()
+      created_at: new Date(),
+      doctors: [],
     });
   };
 
-  const handleShowDetail = (patient: Patient) => {
-    setSelectedPatient(patient);
-    setEditedPatient(patient);
+  const handleShowDetail = async (patient: Patient) => {
+    const doctors = await fetchPatientDoctors(patient.id);
+    const patientWithDoctors = { ...patient, doctors };
+    setSelectedPatient(patientWithDoctors);
+    setEditedPatient(patientWithDoctors);
     setIsDetailModalOpen(true);
     setIsEditMode(false);
     setModalMode('view');
   };
 
+
+  const handleAddDoctor = async () => {
+    if (!selectedPatient || !selectedDoctorId) return;
+  
+    try {
+      const response = await fetch(`${API_ENDPOINTS.PATIENTS}/${selectedPatient.id}/doctors`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ doctorId: selectedDoctorId }),
+      });
+  
+      if (!response.ok) throw new Error('Failed to add doctor');
+  
+      const updatedDoctors = await fetchPatientDoctors(selectedPatient.id);
+      const updatedPatient = { ...selectedPatient, doctors: updatedDoctors };
+      setSelectedPatient(updatedPatient);
+      setEditedPatient(updatedPatient);
+      setSelectedDoctorId('');
+      
+      // Update the patients list
+      setPatients(prevPatients =>
+        prevPatients.map(p =>
+          p.id === selectedPatient.id ? updatedPatient : p
+        )
+      );
+    } catch (error) {
+      console.error("Error adding doctor:", error);
+    }
+  };
+  
+  const handleRemoveDoctor = async (doctorId: number) => {
+    if (!selectedPatient) return;
+  
+    try {
+      const response = await fetch(
+        `${API_ENDPOINTS.PATIENTS}/${selectedPatient.id}/doctors/${doctorId}`,
+        { method: 'DELETE' }
+      );
+  
+      if (!response.ok) throw new Error('Failed to remove doctor');
+  
+      const updatedDoctors = selectedPatient.doctors.filter(d => d.id !== doctorId);
+      const updatedPatient = { ...selectedPatient, doctors: updatedDoctors };
+      setSelectedPatient(updatedPatient);
+      setEditedPatient(updatedPatient);
+  
+      // Update the patients list
+      setPatients(prevPatients =>
+        prevPatients.map(p =>
+          p.id === selectedPatient.id ? updatedPatient : p
+        )
+      );
+    } catch (error) {
+      console.error("Error removing doctor:", error);
+    }
+  };    
+  
   const handleSaveEdit = () => {
     if (!editedPatient || !editedPatient.name.trim()) return;
 
@@ -211,31 +341,89 @@ const Patients: React.FC = () => {
                 id="name"
                 type="text"
                 value={editedPatient?.name || ''}
-                onChange={(e) => setEditedPatient(prev => prev ? { ...prev, name: e.target.value } : null
+                onChange={(e) => setEditedPatient(prev => 
+                  prev ? { ...prev, name: e.target.value } : null
                 )} />
             ) : (
               <div className="detail-field">{selectedPatient?.name}</div>
             )}
           </div>
+
           {!isEditMode && (
             <div className="form-group">
               <label>Registration Date</label>
               <div className="detail-field">
-                {selectedPatient?.created_at && new Date(selectedPatient.created_at).toLocaleDateString()}
+                {selectedPatient?.created_at && 
+                  new Date(selectedPatient.created_at).toLocaleDateString()}
               </div>
             </div>
           )}
+
+          <div className="form-group">
+            <label>Associated Doctors</label>
+            <div className="doctors-list">
+              {selectedPatient?.doctors.map(doctor => (
+                <div key={doctor.id} className="doctor-item">
+                  <span>{doctor.name} ({doctor.doctor_number})</span>
+                  {isEditMode && (
+                    <button 
+                      onClick={() => handleRemoveDoctor(doctor.id)}
+                      className="remove-doctor-button"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            
+            {isEditMode && (
+              <div className="add-doctor-section">
+                <select
+                  value={selectedDoctorId}
+                  onChange={(e) => setSelectedDoctorId(Number(e.target.value))}
+                  className="doctor-select"
+                >
+                  <option value="">Select a doctor...</option>
+                  {availableDoctors
+                    .filter(doctor => 
+                      !selectedPatient?.doctors.some(d => d.id === doctor.id)
+                    )
+                    .map(doctor => (
+                      <option key={doctor.id} value={doctor.id}>
+                        {doctor.name} ({doctor.doctor_number})
+                      </option>
+                    ))
+                  }
+                </select>
+                <button 
+                  onClick={handleAddDoctor}
+                  disabled={!selectedDoctorId}
+                  className="add-doctor-button"
+                >
+                  Add Doctor
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         <div className="modal-footer">
           {isEditMode ? (
             <>
-              <button className="cancel-button" onClick={() => modalMode === 'create' ? closeModal() : setIsEditMode(false)}>
+              <button 
+                className="cancel-button" 
+                onClick={() => modalMode === 'create' ? closeModal() : setIsEditMode(false)}
+              >
                 Cancel
               </button>
-              <button className="save-button" onClick={handleSaveEdit}>Save changes</button>
+              <button className="save-button" onClick={handleSaveEdit}>
+                Save changes
+              </button>
             </>
           ) : (
-            <button className="edit-button" onClick={() => setIsEditMode(true)}>Edit</button>
+            <button className="edit-button" onClick={() => setIsEditMode(true)}>
+              Edit
+            </button>
           )}
         </div>
       </Modal>

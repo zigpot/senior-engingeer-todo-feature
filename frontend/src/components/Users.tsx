@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import "./Users.css";
 import { User } from "../types/models";
 import { Modal } from "./Modal";
-import Checkbox from "./Checkbox";
 import { API_ENDPOINTS } from "../config";
 
 const Users: React.FC = () => {

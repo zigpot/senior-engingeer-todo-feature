@@ -1,9 +1,34 @@
 import React, { useState, useEffect } from "react";
 import "./TodoApp.css";
 import Checkbox from "./Checkbox";
-import { Todo } from "../types/models";
+//import { Todo } from "../types/models";
 import { Modal } from "./Modal";
 import { API_ENDPOINTS } from "../config";
+import { User } from "../types/models";
+
+
+type ResourceType = 'patient_file' | 'doctor_letter' | 'prescription';
+
+interface Resource {
+  id: number;
+  todo_id: number;
+  url_link: string;
+}
+
+
+interface Todo {
+  id: number;
+  title: string;
+  description: string;
+  deadline: Date;
+  created_at: Date;
+  completed: boolean;
+  patient: string;
+  assignee: User | null; // Single assignee, can be null if unassigned
+  resources?: Resource[];
+}
+
+
 
 const TodoApp: React.FC = () => {
   const [tasks, setTasks] = useState<Todo[]>([]);
@@ -26,7 +51,80 @@ const TodoApp: React.FC = () => {
     taskId: null,
     taskTitle: ""
   });
+  const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
+  const [isResourceModalOpen, setIsResourceModalOpen] = useState(false);
+  const [resourceUrl, setResourceUrl] = useState('');
+  
+    // Add new state for resource upload
+    const [newResource, setNewResource] = useState<{
+      type: ResourceType;
+      name: string;
+      file: File | null;
+    }>({
+      type: 'patient_file',
+      name: '',
+      file: null
+    });
 
+  // Add function to fetch resources for a todo
+  const fetchResources = async (todoId: number) => {
+    try {
+      const response = await fetch(`${API_ENDPOINTS.TODOS}/${todoId}/resources`);
+      if (!response.ok) throw new Error('Failed to fetch resources');
+      const data: Resource[] = await response.json();
+      setEditedTask(prev => prev ? { ...prev, resources: data } : null);
+    } catch (error) {
+      console.error('Error fetching resources:', error);
+    }
+  };
+
+  // Function to add a resource
+  const handleAddResource = async () => {
+    if (!editedTask || !resourceUrl.trim()) return;
+
+    try {
+      const response = await fetch(`${API_ENDPOINTS.TODOS}/${editedTask.id}/resources`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url_link: resourceUrl }),
+      });
+
+      if (!response.ok) throw new Error('Failed to add resource');
+      
+      const newResource: Resource = await response.json();
+      setEditedTask(prev => prev ? {
+        ...prev,
+        resources: [...(prev.resources || []), newResource]
+      } : null);
+      
+      setResourceUrl('');
+    } catch (error) {
+      console.error('Error adding resource:', error);
+    }
+  };
+
+  // Function to delete a resource
+  const handleDeleteResource = async (resourceId: number) => {
+    if (!editedTask) return;
+
+    try {
+      const response = await fetch(`${API_ENDPOINTS.TODOS}/${editedTask.id}/resources/${resourceId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) throw new Error('Failed to delete resource');
+      
+      setEditedTask(prev => prev ? {
+        ...prev,
+        resources: prev.resources?.filter(r => r.id !== resourceId) || []
+      } : null);
+    } catch (error) {
+      console.error('Error deleting resource:', error);
+    }
+  };
+  
   // Mock data for dropdowns
   const assignees = ["Dr. Smith", "Dr. Johnson", "Dr. Williams"];
   const patients = ["John Doe", "Jane Smith", "Robert Brown"];
@@ -35,6 +133,7 @@ const TodoApp: React.FC = () => {
     fetchTasks();
   }, [searchTerm, sortBy, sortOrder, filterBy]); // Re-fetch when sort or filter changes
 
+  // Modify fetchTasks to include assignee
   const fetchTasks = async () => {
     try {
       setIsLoading(true);
@@ -49,9 +148,7 @@ const TodoApp: React.FC = () => {
       }
 
       const response = await fetch(`${API_ENDPOINTS.TODOS}?${queryParams}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch tasks');
-      }
+      if (!response.ok) throw new Error('Failed to fetch tasks');
       const data: Todo[] = await response.json();
       setTasks(data);
     } catch (error) {
@@ -60,6 +157,7 @@ const TodoApp: React.FC = () => {
       setIsLoading(false);
     }
   };
+
 
   const handleAddNewTask = () => {
     setModalMode('create');
@@ -74,7 +172,8 @@ const TodoApp: React.FC = () => {
       created_at: new Date(),
       completed: false,
       assignee: '',
-      patient: ''
+      patient: '',
+      resources: []
     });
   };
 
@@ -98,12 +197,14 @@ const TodoApp: React.FC = () => {
       .catch((err) => console.error("Error updating task:", err));
   };
 
-  const handleShowDetail = (task: Todo) => {
+  // Update handleShowDetail to fetch resources
+  const handleShowDetail = async (task: Todo) => {
     setSelectedTask(task);
     setEditedTask(task);
     setIsDetailModalOpen(true);
     setIsEditMode(false);
     setModalMode('view');
+    await fetchResources(task.id);
   };
 
   const handleSaveEdit = () => {
@@ -351,6 +452,48 @@ const TodoApp: React.FC = () => {
               </div>
             )}
           </div>
+      <div className="form-group">
+        <label>Resources</label>
+        <div className="resources-list">
+          {editedTask?.resources?.map(resource => (
+            <div key={resource.id} className="resource-item">
+              <a
+                href={resource.url_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="resource-link"
+              >
+                {resource.url_link}
+              </a>
+              {isEditMode && (
+                <button
+                  className="delete-resource"
+                  onClick={() => handleDeleteResource(resource.id)}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          ))}
+          
+          {isEditMode && (
+            <div className="resource-upload">
+              <input
+                type="text"
+                placeholder="Enter resource URL"
+                value={resourceUrl}
+                onChange={e => setResourceUrl(e.target.value)}
+              />
+              <button 
+                onClick={handleAddResource}
+                disabled={!resourceUrl.trim()}
+              >
+                Add Resource
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
         </div>
         <div className="modal-footer">
           {isEditMode ? (
