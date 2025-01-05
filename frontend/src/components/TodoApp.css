@@ -121,9 +121,12 @@
   border-radius: 8px;
   margin-bottom: 1rem;
 }
-.sort-controls {
-  gap: 1rem;
-  margin-bottom: 1rem;
+.sxxs {
+    width: 40%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
 }
 
 .sort-select {

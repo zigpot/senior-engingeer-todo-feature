@@ -5,8 +5,6 @@ import { Modal } from "./Modal";
 import Checkbox from "./Checkbox";
 
 const Users: React.FC = () => {
-  const [categories, setCategories] = useState<string[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>("Tasks");
   const [isLoading, setIsLoading] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
 
@@ -33,7 +31,6 @@ const Users: React.FC = () => {
 
   useEffect(() => {
     fetchUsers();
-    setCategories(["Tasks", "Users", "Patients"]);
   }, [searchTerm, selectedRoles, sortField, sortOrder]);
   
   const fetchUsers = async () => {

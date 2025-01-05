@@ -10,7 +10,16 @@ type SortOrder = 'asc' | 'desc';
 type FilterStatus = 'all' | 'completed' | 'uncompleted';
 type UserRole = 'Doctor' | 'Nurse' | 'Secretary';
 
-// Add these interfaces near the top with other interfaces
+type Task = {
+  id: number;
+  title: string;
+  description: string;
+  status: 'completed' | 'uncompleted';
+  created_at: Date;
+  deadline: Date | null;
+};
+
+// User interface lol
 interface User {
   id: number;
   name: string;
@@ -104,65 +113,54 @@ app.post("/todos", async (req: Request, res: Response): Promise<void> => {
 });
 
 // Get all tasks
-app.get("/todos", async (req: Request, res: Response): Promise<void> => {
+app.get("/todos", async (req: Request, res: Response) => {
+  const {
+    sort = "created_at",
+    order = "desc",
+    status = "all",
+    search = "",
+  } = req.query;
+
+  // Validate query parameters
+  const sortField: SortField = ["title", "deadline", "created_at"].includes(sort as string)
+    ? (sort as SortField)
+    : "created_at";
+
+  const sortOrder: SortOrder = ["asc", "desc"].includes(order as string)
+    ? (order as SortOrder)
+    : "desc";
+
+  const filterStatus: FilterStatus = ["all", "completed", "uncompleted"].includes(
+    status as string
+  )
+    ? (status as FilterStatus)
+    : "all";
+
   try {
-    const { 
-      sort = 'created_at',
-      order = 'desc',
-      status = 'all'
-    } = req.query as TodoQueryParams;
+    // Construct SQL query dynamically
+    let query = "SELECT * FROM todos WHERE 1=1";
+    const params: (string | number)[] = [];
 
-    // Build the WHERE clause for filtering
-    let whereClause = '';
-    if (status === 'completed') {
-      whereClause = 'WHERE completed = true';
-    } else if (status === 'uncompleted') {
-      whereClause = 'WHERE completed = false';
+    // Add status filter
+    if (filterStatus !== "all") {
+      query += " AND status = $1";
+      params.push(filterStatus);
     }
 
-    // Validate sort field
-    const validSortFields: SortField[] = ['title', 'deadline', 'created_at'];
-    if (!validSortFields.includes(sort as SortField)) {
-      res.status(400).json({ error: "Invalid sort field" });
-      return;
+    // Add search filter
+    if (search) {
+      query += ` AND (title ILIKE $${params.length + 1} OR description ILIKE $${params.length + 2})`;
+      params.push(`%${search}%`, `%${search}%`);
     }
 
-    // Validate sort order
-    const validOrders: SortOrder[] = ['asc', 'desc'];
-    if (!validOrders.includes(order as SortOrder)) {
-      res.status(400).json({ error: "Invalid sort order" });
-      return;
-    }
+    // Add sorting
+    query += ` ORDER BY ${sortField} ${sortOrder}`;
 
-    // Handle NULL values in sorting
-    let orderByClause = '';
-    if (sort === 'deadline') {
-      // Put NULL values at the end regardless of sort order
-      orderByClause = `
-        ORDER BY 
-          CASE 
-            WHEN deadline IS NULL THEN 1 
-            ELSE 0 
-          END,
-          deadline ${order}
-      `;
-    } else {
-      orderByClause = `ORDER BY ${sort} ${order}`;
-    }
-
-    const query = `
-      SELECT * FROM todos 
-      ${whereClause}
-      ${orderByClause}
-    `;
-    
-    console.log('Executing query:', query); // For debugging
-
-    const result = await pool.query(query);
+    const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (error) {
-    console.error("Error fetching tasks:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 

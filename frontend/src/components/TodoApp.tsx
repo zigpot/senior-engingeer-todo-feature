@@ -5,14 +5,13 @@ import { Todo } from "../types/models";
 import { Modal } from "./Modal";
 
 const TodoApp: React.FC = () => {
-  const [categories, setCategories] = useState<string[]>([]);
   const [tasks, setTasks] = useState<Todo[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>("Tasks");
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Todo | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedTask, setEditedTask] = useState<Todo | null>(null);
   const [modalMode, setModalMode] = useState<'view' | 'edit' | 'create'>('view');
+  const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'deadline' | 'created_at' | 'title'>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filterBy, setFilterBy] = useState<'all' | 'completed' | 'uncompleted'>('all');
@@ -33,8 +32,7 @@ const TodoApp: React.FC = () => {
 
   useEffect(() => {
     fetchTasks();
-    setCategories(["Tasks", "Users", "Patients"]);
-  }, [sortBy, sortOrder, filterBy]); // Re-fetch when sort or filter changes
+  }, [searchTerm, sortBy, sortOrder, filterBy]); // Re-fetch when sort or filter changes
 
   const fetchTasks = async () => {
     try {
@@ -44,6 +42,10 @@ const TodoApp: React.FC = () => {
         order: sortOrder,
         status: filterBy
       });
+
+      if (searchTerm) {
+        queryParams.append('search', searchTerm);
+      }
 
       const response = await fetch(`http://localhost:5000/todos?${queryParams}`);
       if (!response.ok) {
@@ -167,11 +169,17 @@ const TodoApp: React.FC = () => {
       {/* Main Content */}
       <div className="main">
         <div className="header">
-          <span>{selectedCategory}</span>
+          <span>Tasks</span>
           <button className="add-task-button" onClick={handleAddNewTask}>+</button>
         </div>
         <div className="filters">
           <div className="sort-controls">
+          <input
+              type="text"
+              placeholder="Search tasks..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="sxxs" />
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as 'deadline' | 'created_at' | 'title')}

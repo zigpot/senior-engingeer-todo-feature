@@ -4,8 +4,6 @@ import { Modal } from "./Modal";
 import './Patients.css';
 
 const Patients: React.FC = () => {
-  const [categories, setCategories] = useState<string[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>("Tasks");
   const [isLoading, setIsLoading] = useState(false);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
@@ -28,7 +26,6 @@ const Patients: React.FC = () => {
 
   useEffect(() => {
     fetchPatients();
-    setCategories(["Tasks", "Users", "Patients"]);
   }, [searchTerm, sortField, sortOrder]);
 
   const fetchPatients = async () => {
