@@ -24,6 +24,8 @@ const Modal: React.FC<{
 };
 
 const Patients: React.FC = () => {
+  const [categories, setCategories] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("Tasks");
   const [isLoading, setIsLoading] = useState(false);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
@@ -46,6 +48,7 @@ const Patients: React.FC = () => {
 
   useEffect(() => {
     fetchPatients();
+    setCategories(["Tasks", "Users", "Patients"]);
   }, [searchTerm, sortField, sortOrder]);
   
   const fetchPatients = async () => {
@@ -153,6 +156,22 @@ const Patients: React.FC = () => {
 
   return (
     <div className="patients">
+    {/* Sidebar */}
+    <div className="sidebar">
+      <div className="categories-header"></div>
+      <div className="categories">
+        {categories.map((category, index) => (
+          <div
+            key={index}
+            className={`category${selectedCategory === category ? 'selected' : ''}`}
+            onClick={() => setSelectedCategory(category)}
+          >
+            {category}
+          </div>
+        ))}
+      </div>
+    </div>
+
       <div className="main">
         <div className="header">
           <span>Patient Management</span>

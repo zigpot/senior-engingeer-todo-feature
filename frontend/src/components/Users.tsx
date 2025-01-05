@@ -182,6 +182,7 @@ const Users: React.FC = () => {
 
   return (
     <div className="users">
+      
     {/* Sidebar */}
     <div className="sidebar">
       <div className="categories-header"></div>
