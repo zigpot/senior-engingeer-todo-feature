@@ -3,8 +3,8 @@ input[type="checkbox"] {
     /* Default styles for the checkbox */
     appearance: none;
     width: 20px;
-    height: 14px;
-    border: 2px solid #ccc;
+    height: 20px;
+    border: 1px solid #ccc;
     border-radius: 0px;
     background-color: white;
     cursor: pointer;

@@ -1,30 +1,8 @@
 import React, { useEffect, useState } from "react";
 import "./Users.css";
-
-interface User {
-  id: number;
-  name: string;
-  role: 'Doctor' | 'Nurse' | 'Secretary';
-  doctor_number?: string;
-  created_at: Date;
-}
-
-
-const Modal: React.FC<{
-  isOpen: boolean;
-  onClose: () => void;
-  children: React.ReactNode;
-}> = ({ isOpen, onClose, children }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
-        {children}
-      </div>
-    </div>
-  );
-};
+import { User } from "../types/models";
+import { Modal } from "./Modal";
+import Checkbox from "./Checkbox";
 
 const Users: React.FC = () => {
   const [categories, setCategories] = useState<string[]>([]);
@@ -182,7 +160,7 @@ const Users: React.FC = () => {
 
   return (
     <div className="users">
-      
+
     {/* Sidebar */}
     <div className="sidebar">
       <div className="categories-header"></div>
@@ -242,8 +220,7 @@ const Users: React.FC = () => {
             <div className="checkbox-group">
               {roles.map(role => (
                 <label key={role} className="checkbox-label">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={selectedRoles.includes(role)}
                     onChange={() => handleRoleToggle(role)}
                   />

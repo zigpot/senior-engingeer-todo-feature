@@ -1,27 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./Patients.css";
-
-interface Patient {
-  id: number;
-  name: string;
-  created_at: Date;
-}
-
-const Modal: React.FC<{
-  isOpen: boolean;
-  onClose: () => void;
-  children: React.ReactNode;
-}> = ({ isOpen, onClose, children }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
-        {children}
-      </div>
-    </div>
-  );
-};
+import { Patient } from "../types/models";
+import { Modal } from "./Modal";
 
 const Patients: React.FC = () => {
   const [categories, setCategories] = useState<string[]>([]);

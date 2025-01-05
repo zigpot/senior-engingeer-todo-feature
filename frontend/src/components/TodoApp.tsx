@@ -1,49 +1,13 @@
 import React, { useState, useEffect } from "react";
 import "./TodoApp.css";
 import Checkbox from "./Checkbox";
-
-interface Todo {
-  id: number;
-  title: string;
-  description?: string;
-  deadline?: Date;
-  created_at: Date;
-  completed: boolean;
-  assignee?: string;
-  patient?: string;
-}
-
-// interface TodoCreate {
-//   title: string;
-//   description?: string;
-//   deadline?: Date;
-//   created_at: Date;
-//   completed: boolean;
-//   assignee?: string;
-//   patient?: string;
-// }
-
-const Modal: React.FC<{
-  isOpen: boolean;
-  onClose: () => void;
-  children: React.ReactNode;
-}> = ({ isOpen, onClose, children }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
-        {children}
-      </div>
-    </div>
-  );
-};
+import { Todo } from "../types/models";
+import { Modal } from "./Modal";
 
 const TodoApp: React.FC = () => {
   const [categories, setCategories] = useState<string[]>([]);
   const [tasks, setTasks] = useState<Todo[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("Tasks");
-  // const [newTask, setNewTask] = useState<string>("");
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Todo | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -110,32 +74,6 @@ const TodoApp: React.FC = () => {
       patient: ''
     });
   };
-
-  // const handleAddTask = () => {
-  //   if (!newTask.trim() || !selectedCategory) return;
-
-  //   const newTaskObject: TodoCreate = {
-  //     title: newTask,
-  //     description: "To be filled",
-  //     created_at: new Date(),
-  //     completed: false,
-  //     deadline: new Date(new Date().getTime() + 14 * 24 * 60 * 60 * 1000),
-  //   };
-
-  //   fetch("http://localhost:5000/todos", {
-  //     method: "POST",
-  //     headers: {
-  //       "Content-Type": "application/json",
-  //     },
-  //     body: JSON.stringify(newTaskObject),
-  //   })
-  //     .then((res) => res.json())
-  //     .then((addedTask: Todo) => {
-  //       setTasks((prevTasks) => [...prevTasks, addedTask]);
-  //       setNewTask("");
-  //     })
-  //     .catch((err) => console.error("Error adding task:", err));
-  // };
 
   const handleToggleTask = (id: number) => {
     const taskToUpdate = tasks.find((task) => task.id === id);
@@ -224,34 +162,6 @@ const TodoApp: React.FC = () => {
     setModalMode('view');
   };
 
-
-  // const sortedAndFilteredTasks = React.useMemo(() => {
-  //   let filteredTasks = tasks;
-    
-  //   // Apply filters
-  //   if (filterBy === 'completed') {
-  //     filteredTasks = tasks.filter(task => task.completed);
-  //   } else if (filterBy === 'uncompleted') {
-  //     filteredTasks = tasks.filter(task => !task.completed);
-  //   }
-
-  //   // Apply sorting
-  //   return [...filteredTasks].sort((a, b) => {
-  //     switch (sortBy) {
-  //       case 'deadline':
-  //         const aTime = a.deadline ? new Date(a.deadline).getTime() : Infinity;
-  //         const bTime = b.deadline ? new Date(b.deadline).getTime() : Infinity;
-  //         return aTime - bTime;
-  //       case 'created_at':
-  //         return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-  //       case 'title':
-  //         return a.title.localeCompare(b.title);
-  //       default:
-  //         return 0;
-  //     }
-  //   });
-  // }, [tasks, sortBy, filterBy]);
-
   return (
     <div className="todoapp">
       {/* Sidebar */}
@@ -273,16 +183,15 @@ const TodoApp: React.FC = () => {
       {/* Main Content */}
       <div className="main">
         <div className="header">
-          {selectedCategory}
-        </div>
-        <div>
-          <button className="add-new-task" onClick={handleAddNewTask}>+</button>
+          <span>{selectedCategory}</span>
+          <button className="add-task-button" onClick={handleAddNewTask}>+</button>
         </div>
         <div className="filters">
           <div className="sort-controls">
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as 'deadline' | 'created_at' | 'title')}
+              className="sort-select"
             >
               <option value="title">Sort by Title</option>
               <option value="created_at">Sort by Created Date</option>
@@ -291,19 +200,21 @@ const TodoApp: React.FC = () => {
             <select
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+              className="order-select"
             >
               <option value="asc">Ascending</option>
               <option value="desc">Descending</option>
             </select>
-          </div>
           <select
             value={filterBy}
             onChange={(e) => setFilterBy(e.target.value as 'all' | 'completed' | 'uncompleted')}
+            className="filter-select"
           >
             <option value="all">All Tasks</option>
             <option value="completed">Completed</option>
             <option value="uncompleted">Uncompleted</option>
           </select>
+          </div>
         </div>
 
         <div className="task-list">
