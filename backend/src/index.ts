@@ -203,30 +203,45 @@ app.get("/todos", async (req: Request, res: Response) => {
   }
 });
 
-// Get single task
+// Get single todo with assignee details
 app.get("/todos/:id", async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     
     const query = `
-      SELECT * FROM todos 
-      WHERE id = $1
+      SELECT 
+        t.*,
+        json_build_object(
+          'id', u.id,
+          'name', u.name,
+          'role', u.role,
+          'doctor_number', u.doctor_number
+        ) FILTER (WHERE u.id IS NOT NULL) as assignee
+      FROM todos t
+      LEFT JOIN todo_assignments ta ON t.id = ta.todo_id
+      LEFT JOIN users u ON ta.user_id = u.id
+      WHERE t.id = $1
     `;
     
     const result = await pool.query(query, [id]);
     
     if (result.rows.length === 0) {
-      res.status(404).json({ error: "Task not found" });
+      res.status(404).json({ error: "Todo not found" });
       return;
     }
+
+    // Clean up the response
+    const todo = result.rows[0];
+    if (todo.assignee === null) {
+      todo.assignee = null; // Ensure consistent null representation
+    }
     
-    res.json(result.rows[0]);
+    res.json(todo);
   } catch (error) {
-    console.error("Error fetching task:", error);
+    console.error("Error fetching todo:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
-
 // Get resources for a specific task
 app.get("/todos/:todoId/resources", async (req: Request, res: Response): Promise<void> => {
   try {
@@ -382,9 +397,100 @@ interface User {
     doctor_number?: string;
     created_at: Date;
 }
-
-// Get All User
 app.get("/users", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const {
+      sort = 'name',
+      order = 'asc',
+      role,
+      search
+    } = req.query as UserQueryParams;
+
+    // Validate sort field
+    const validSortFields: UserSortField[] = ['name', 'role', 'created_at'];
+    if (!validSortFields.includes(sort as UserSortField)) {
+      res.status(400).json({ error: "Invalid sort field" });
+      return;
+    }
+
+    // Validate sort order
+    const validOrders: UserSortOrder[] = ['asc', 'desc'];
+    if (!validOrders.includes(order as UserSortOrder)) {
+      res.status(400).json({ error: "Invalid sort order" });
+      return;
+    }
+
+    // Build the WHERE clause for filtering and search
+    const whereConditions: string[] = [];
+    const queryParams: any[] = [];
+    let paramCount = 1;
+
+    // Add role filter if specified
+    if (role) {
+      const roles = (role as string).split(',');
+      const rolePlaceholders = roles.map(() => `$${paramCount++}`).join(',');
+      whereConditions.push(`u.role IN (${rolePlaceholders})`);
+      queryParams.push(...roles);
+    }
+
+    // Add search condition if search term is provided
+    if (search) {
+      whereConditions.push(`u.name ILIKE $${paramCount}`);
+      queryParams.push(`%${search}%`);
+      paramCount++;
+    }
+
+    // Combine WHERE conditions
+    const whereClause = whereConditions.length > 0
+      ? 'WHERE ' + whereConditions.join(' AND ')
+      : '';
+
+    const query = `
+      WITH user_todos AS (
+        SELECT 
+          ta.user_id,
+          json_agg(
+            json_build_object(
+              'id', t.id,
+              'title', t.title,
+              'description', t.description,
+              'deadline', t.deadline,
+              'completed', t.completed,
+              'created_at', t.created_at
+            )
+          ) FILTER (WHERE t.id IS NOT NULL) as assigned_todos,
+          COUNT(t.id) as todo_count
+        FROM users u
+        LEFT JOIN todo_assignments ta ON u.id = ta.user_id
+        LEFT JOIN todos t ON ta.todo_id = t.id
+        GROUP BY ta.user_id
+      )
+      SELECT 
+        u.id, 
+        u.name, 
+        u.role, 
+        u.doctor_number, 
+        u.created_at,
+        COALESCE(ut.assigned_todos, '[]'::json) as assigned_todos,
+        COALESCE(ut.todo_count, 0) as todo_count
+      FROM users u
+      LEFT JOIN user_todos ut ON u.id = ut.user_id
+      ${whereClause}
+      ORDER BY ${sort} ${order}
+    `;
+
+    console.log('Executing query:', query, 'with params:', queryParams);
+
+    const result = await pool.query(query, queryParams);
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Get All Users
+app.get("/users_OBSOLETE", async (req: Request, res: Response): Promise<void> => {
   try {
       const {
           sort = 'name',
@@ -509,7 +615,7 @@ app.get("/users/:id", async (req: Request, res: Response): Promise<void> => {
   }
 });
 // Get all users
-app.get("/users", async (req: Request, res: Response): Promise<void> => {
+app.get("/users_OBSOLETE", async (req: Request, res: Response): Promise<void> => {
   try {
       const query = `
           SELECT id, name, role, doctor_number, created_at 
@@ -877,6 +983,95 @@ app.delete("/patients/:patientId/doctors/:doctorId", async (req: Request, res: R
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+app.put("/todos/:todoId/assignment", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { todoId } = req.params;
+    const { user_id } = req.body; // user_id can be null to remove assignment
+
+    // Start a transaction since we'll be doing multiple operations
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // First, remove any existing assignment for this todo
+      const deleteQuery = `
+        DELETE FROM todo_assignments 
+        WHERE todo_id = $1
+      `;
+      await client.query(deleteQuery, [todoId]);
+
+      // If a user_id is provided, create the new assignment
+      if (user_id !== null) {
+        // Verify that the user exists
+        const userCheckQuery = `
+          SELECT id FROM users WHERE id = $1
+        `;
+        const userResult = await client.query(userCheckQuery, [user_id]);
+        if (userResult.rows.length === 0) {
+          await client.query('ROLLBACK');
+          res.status(404).json({ error: "User not found" });
+          return;
+        }
+
+        // Create the new assignment
+        const insertQuery = `
+          INSERT INTO todo_assignments (todo_id, user_id)
+          VALUES ($1, $2)
+        `;
+        await client.query(insertQuery, [todoId, user_id]);
+      }
+
+      // Get the updated todo with assignee information
+      const todoQuery = `
+        SELECT 
+          t.*,
+          u.id as assignee_id,
+          u.name as assignee_name,
+          u.role as assignee_role
+        FROM todos t
+        LEFT JOIN todo_assignments ta ON t.id = ta.todo_id
+        LEFT JOIN users u ON ta.user_id = u.id
+        WHERE t.id = $1
+      `;
+      const todoResult = await client.query(todoQuery, [todoId]);
+
+      if (todoResult.rows.length === 0) {
+        await client.query('ROLLBACK');
+        res.status(404).json({ error: "Todo not found" });
+        return;
+      }
+
+      // Format the response
+      const todo = todoResult.rows[0];
+      const response = {
+        ...todo,
+        assignee: todo.assignee_id ? {
+          id: todo.assignee_id,
+          name: todo.assignee_name,
+          role: todo.assignee_role
+        } : null
+      };
+
+      // Remove the redundant fields
+      delete response.assignee_id;
+      delete response.assignee_name;
+      delete response.assignee_role;
+
+      await client.query('COMMIT');
+      res.json(response);
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error("Error updating task assignment:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

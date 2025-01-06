@@ -42,6 +42,7 @@ const TodoApp: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filterBy, setFilterBy] = useState<'all' | 'completed' | 'uncompleted'>('all');
   const [isLoading, setIsLoading] = useState(false);
+  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean;
     taskId: number | null;
@@ -128,36 +129,79 @@ const TodoApp: React.FC = () => {
   // Mock data for dropdowns
   const assignees = ["Dr. Smith", "Dr. Johnson", "Dr. Williams"];
   const patients = ["John Doe", "Jane Smith", "Robert Brown"];
+  
+  
+  const AssigneeSelection = () => (
+    <div className="form-group">
+      <label htmlFor="assignee">Assignee</label>
+      {isEditMode ? (
+        <select
+          id="assignee"
+          value={editedTask?.assignee?.id || ''}
+          onChange={(e) => {
+            if (editedTask) {
+              const userId = e.target.value ? parseInt(e.target.value) : null;
+              handleAssigneeChange(editedTask.id, userId);
+            }
+          }}
+        >
+          <option value="">Select Assignee</option>
+          {availableUsers.map(user => (
+            <option key={user.id} value={user.id}>
+              {user.name}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <div className="detail-field">
+          {selectedTask?.assignee?.name || 'Not assigned'}
+        </div>
+      )}
+    </div>
+  );
 
   useEffect(() => {
     fetchTasks();
+    fetchUsers();
   }, [searchTerm, sortBy, sortOrder, filterBy]); // Re-fetch when sort or filter changes
 
-  // Modify fetchTasks to include assignee
-  const fetchTasks = async () => {
-    try {
-      setIsLoading(true);
-      const queryParams = new URLSearchParams({
-        sort: sortBy,
-        order: sortOrder,
-        status: filterBy
-      });
-
-      if (searchTerm) {
-        queryParams.append('search', searchTerm);
+    // Add function to fetch all available users
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch(`${API_ENDPOINTS.USERS}`);
+        if (!response.ok) throw new Error('Failed to fetch users');
+        const users: User[] = await response.json();
+        setAvailableUsers(users);
+      } catch (error) {
+        console.error('Error fetching users:', error);
       }
-
-      const response = await fetch(`${API_ENDPOINTS.TODOS}?${queryParams}`);
-      if (!response.ok) throw new Error('Failed to fetch tasks');
-      const data: Todo[] = await response.json();
-      setTasks(data);
-    } catch (error) {
-      console.error("Error fetching tasks:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+    };
+  
+    // Modify fetchTasks to include assignees
+    const fetchTasks = async () => {
+      try {
+        setIsLoading(true);
+        const queryParams = new URLSearchParams({
+          sort: sortBy,
+          order: sortOrder,
+          status: filterBy
+        });
+  
+        if (searchTerm) {
+          queryParams.append('search', searchTerm);
+        }
+  
+        const response = await fetch(`${API_ENDPOINTS.TODOS}?${queryParams}`);
+        if (!response.ok) throw new Error('Failed to fetch tasks');
+        const data: Todo[] = await response.json();
+        setTasks(data);
+      } catch (error) {
+        console.error("Error fetching tasks:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+  
 
   const handleAddNewTask = () => {
     setModalMode('create');
@@ -171,11 +215,43 @@ const TodoApp: React.FC = () => {
       deadline: new Date(),
       created_at: new Date(),
       completed: false,
-      assignee: '',
+      assignee: null,
       patient: '',
       resources: []
     });
   };
+
+  // Add function to handle assignee change
+  const handleAssigneeChange = async (todoId: number, userId: number | null) => {
+    try {
+      const response = await fetch(`${API_ENDPOINTS.TODOS}/${todoId}/assignment`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ user_id: userId }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update assignment');
+
+      // Refresh the task to get updated assignee
+      const updatedTaskResponse = await fetch(`${API_ENDPOINTS.TODOS}/${todoId}`);
+      if (!updatedTaskResponse.ok) throw new Error('Failed to fetch updated task');
+      
+      const updatedTask: Todo = await updatedTaskResponse.json();
+      setTasks(prevTasks => 
+        prevTasks.map(task => task.id === todoId ? updatedTask : task)
+      );
+
+      if (editedTask?.id === todoId) {
+        setEditedTask(updatedTask);
+      }
+    } catch (error) {
+      console.error('Error updating assignment:', error);
+    }
+  };
+
+
 
   const handleToggleTask = (id: number) => {
     const taskToUpdate = tasks.find((task) => task.id === id);
@@ -397,25 +473,7 @@ const TodoApp: React.FC = () => {
               <div className="detail-field">{selectedTask?.description}</div>
             )}
           </div>
-          <div className="form-group">
-            <label htmlFor="assignee">Assignee</label>
-            {isEditMode ? (
-              <select
-                id="assignee"
-                value={editedTask?.assignee || ''}
-                onChange={(e) => setEditedTask(prev => 
-                  prev ? { ...prev, assignee: e.target.value } : null
-                )}
-              >
-                <option value="">Select Assignee</option>
-                {assignees.map(assignee => (
-                  <option key={assignee} value={assignee}>{assignee}</option>
-                ))}
-              </select>
-            ) : (
-              <div className="detail-field">{selectedTask?.assignee || 'Not assigned'}</div>
-            )}
-          </div>
+          <AssigneeSelection />
           <div className="form-group">
             <label htmlFor="patient">Patient</label>
             {isEditMode ? (
