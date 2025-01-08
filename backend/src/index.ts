@@ -16,6 +16,8 @@ import { SortField, SortOrder, FilterStatus } from "./types/common.types";
 import { config } from "./config/config";
 import logger from "./services/logger";
 
+import todoRoutes from "./routes/todoRoutes";
+
 // Express app initialization
 const app = express();
 app.use(cors());
@@ -131,7 +133,6 @@ app.get("/todos", async (req: Request, res: Response) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
-
 // Get single todo with assignee details
 app.get("/todos/:id", async (req: Request, res: Response): Promise<void> => {
   try {
@@ -970,6 +971,12 @@ app.put("/todos/:todoId/assignment", async (req: Request, res: Response): Promis
   }
 });
 
-app.listen(PORT, () => {
-  logger.info(`Server is running on port ${PORT}`);
-});
+export { app };
+
+// The server starts only when the script is run directly,
+// allowing for testing the server without starting it
+if (require.main === module) {
+  app.listen(PORT, () => {
+    logger.info(`Server is running on port ${PORT}`);
+  });
+}

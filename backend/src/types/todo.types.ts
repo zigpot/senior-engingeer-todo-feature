@@ -19,6 +19,7 @@ export interface TodoQueryParams {
   sort?: SortField;
   order?: SortOrder;
   status?: FilterStatus;
+  search?: string;
 }
 
 export type Task = {
