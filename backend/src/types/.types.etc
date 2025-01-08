@@ -1,0 +1,73 @@
+
+// Add these export types at the top with other export interfaces
+export type SortField = 'title' | 'deadline' | 'created_at';
+export type SortOrder = 'asc' | 'desc';
+export type FilterStatus = 'all' | 'completed' | 'uncompleted';
+export type UserRole = 'Doctor' | 'Nurse' | 'Secretary';
+
+export type Task = {
+  id: number;
+  title: string;
+  description: string;
+  status: 'completed' | 'uncompleted';
+  created_at: Date;
+  deadline: Date | null;
+};
+
+export interface Resource {
+  id: number;
+  todo_id: number;
+  url_link: string;
+}
+
+
+// User export interface lol
+export interface User {
+  id: number;
+  name: string;
+  role: UserRole;
+  doctor_number?: string;
+  created_at: Date;
+}
+
+export interface TodoQueryParams {
+  sort?: SortField;
+  order?: SortOrder;
+  status?: FilterStatus;
+}
+
+// Define export interfaces
+export interface Todo {
+  id: number;
+  title: string;
+  description?: string;
+  deadline?: Date;
+  created_at: Date;
+  completed: boolean;
+}
+
+export interface TodoCreate {
+  title: string;
+  description?: string;
+  deadline?: Date;
+}
+// Add these export types with other export type definitions
+export type PatientSortField = 'name' | 'created_at';
+export type PatientSortOrder = 'asc' | 'desc';
+
+export interface PatientQueryParams {
+    sort?: PatientSortField;
+    order?: PatientSortOrder;
+    search?: string;
+}
+
+export interface Patient {
+    id: number;
+    name: string;
+    created_at: Date;
+}
+
+export interface DoctorPatient {
+  doctor_id: number;
+  patient_id: number;
+}

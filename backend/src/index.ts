@@ -2,97 +2,26 @@ import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
 import { Request, Response } from "express";
-import { Pool } from "pg";
+import { pool } from "./config/database";
+import { TodoCreate } from "./types/todo.types";
+import { User,
+  UserQueryParams,
+  UserSortField,
+  UserSortOrder } from "./types/user.types";
+import { Patient,
+  PatientQueryParams,
+  PatientSortField,
+  PatientSortOrder } from "./types/patient.types";
+import { SortField, SortOrder, FilterStatus } from "./types/common.types";
+import { config } from "./config/config";
+import logger from "./services/logger";
 
-// Add these types at the top with other interfaces
-type SortField = 'title' | 'deadline' | 'created_at';
-type SortOrder = 'asc' | 'desc';
-type FilterStatus = 'all' | 'completed' | 'uncompleted';
-type UserRole = 'Doctor' | 'Nurse' | 'Secretary';
-
-type Task = {
-  id: number;
-  title: string;
-  description: string;
-  status: 'completed' | 'uncompleted';
-  created_at: Date;
-  deadline: Date | null;
-};
-
-interface Resource {
-  id: number;
-  todo_id: number;
-  url_link: string;
-}
-
-
-// User interface lol
-interface User {
-  id: number;
-  name: string;
-  role: UserRole;
-  doctor_number?: string;
-  created_at: Date;
-}
-
-interface TodoQueryParams {
-  sort?: SortField;
-  order?: SortOrder;
-  status?: FilterStatus;
-}
-
-// Define interfaces
-interface Todo {
-  id: number;
-  title: string;
-  description?: string;
-  deadline?: Date;
-  created_at: Date;
-  completed: boolean;
-}
-
-interface TodoCreate {
-  title: string;
-  description?: string;
-  deadline?: Date;
-}
-// Add these types with other type definitions
-type PatientSortField = 'name' | 'created_at';
-type PatientSortOrder = 'asc' | 'desc';
-
-interface PatientQueryParams {
-    sort?: PatientSortField;
-    order?: PatientSortOrder;
-    search?: string;
-}
-
-interface Patient {
-    id: number;
-    name: string;
-    created_at: Date;
-}
-
-interface DoctorPatient {
-  doctor_id: number;
-  patient_id: number;
-}
-
-
-// Initialize express app
+// Express app initialization
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-const PORT = process.env.PORT || 5000;
-
-// Database configuration
-const pool = new Pool({
-  user: 'todo_user',
-  host: 'localhost',
-  database: 'todo_db',
-  password: 'password123',
-  port: 5432,
-});
+const PORT = process.env.PORT || config.server.port /*(5000)*/;
 
 // Default route
 app.get("/", (req: Request, res: Response) => {
@@ -120,7 +49,7 @@ app.post("/todos", async (req: Request, res: Response): Promise<void> => {
     
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error("Error adding task:", error);
+    logger.error("Error adding task:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -145,11 +74,10 @@ app.post("/todos/:todoId/resources", async (req: Request, res: Response): Promis
     const result = await pool.query(query, [todoId, url_link]);
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error("Error adding resource:", error);
+    logger.error("Error adding resource:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
-
 
 // Get all tasks
 app.get("/todos", async (req: Request, res: Response) => {
@@ -159,6 +87,7 @@ app.get("/todos", async (req: Request, res: Response) => {
     status = "all",
     search = "",
   } = req.query;
+  logger.info("Retrieving all tasks");
 
   // Validate query parameters
   const sortField: SortField = ["title", "deadline", "created_at"].includes(sort as string)
@@ -198,7 +127,7 @@ app.get("/todos", async (req: Request, res: Response) => {
     const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
@@ -207,7 +136,7 @@ app.get("/todos", async (req: Request, res: Response) => {
 app.get("/todos/:id", async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    
+
     const query = `
       SELECT 
         t.*,
@@ -222,7 +151,7 @@ app.get("/todos/:id", async (req: Request, res: Response): Promise<void> => {
       LEFT JOIN users u ON ta.user_id = u.id
       WHERE t.id = $1
     `;
-    
+        
     const result = await pool.query(query, [id]);
     
     if (result.rows.length === 0) {
@@ -238,7 +167,7 @@ app.get("/todos/:id", async (req: Request, res: Response): Promise<void> => {
     
     res.json(todo);
   } catch (error) {
-    console.error("Error fetching todo:", error);
+    logger.error("Error fetching todo:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -257,7 +186,7 @@ app.get("/todos/:todoId/resources", async (req: Request, res: Response): Promise
     const result = await pool.query(query, [todoId]);
     res.json(result.rows);
   } catch (error) {
-    console.error("Error fetching resources:", error);
+    logger.error("Error fetching resources:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -289,11 +218,11 @@ app.put("/todos/:id", async (req: Request, res: Response): Promise<void> => {
     }
 
     // Log the successful update
-    console.log(`Task with ID ${id} successfully updated:`, result.rows[0]);
+    logger.info(`Task with ID ${id} successfully updated:`, result.rows[0]);
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error("Error updating task:", error);
+    logger.error("Error updating task:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -319,7 +248,7 @@ app.patch("/todos/:id/toggle", async (req: Request, res: Response): Promise<void
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error("Error toggling task completion:", error);
+    logger.error("Error toggling task completion:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -344,11 +273,10 @@ app.delete("/todos/:id", async (req: Request, res: Response): Promise<void> => {
 
     res.status(204).send();
   } catch (error) {
-    console.error("Error deleting task:", error);
+    logger.error("Error deleting task:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
-
 
 // Delete a resource
 app.delete("/todos/:todoId/resources/:resourceId", async (req: Request, res: Response): Promise<void> => {
@@ -370,33 +298,13 @@ app.delete("/todos/:todoId/resources/:resourceId", async (req: Request, res: Res
 
     res.status(204).send();
   } catch (error) {
-    console.error("Error deleting resource:", error);
+    logger.error("Error deleting resource:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// Add these types with other type definitions
-type UserSortField = 'name' | 'role' | 'created_at';
-type UserSortOrder = 'asc' | 'desc';
-
-interface UserQueryParams {
-    sort?: UserSortField;
-    order?: UserSortOrder;
-    role?: 'Doctor' | 'Nurse' | 'Secretary';
-    search?: string;
-}
-
-
 /* USER ENDPOINT */
 
-
-interface User {
-    id: number;
-    name: string;
-    role: 'Doctor' | 'Nurse' | 'Secretary';
-    doctor_number?: string;
-    created_at: Date;
-}
 app.get("/users", async (req: Request, res: Response): Promise<void> => {
   try {
     const {
@@ -479,12 +387,12 @@ app.get("/users", async (req: Request, res: Response): Promise<void> => {
       ORDER BY ${sort} ${order}
     `;
 
-    console.log('Executing query:', query, 'with params:', queryParams);
+    logger.info('Executing query:', query, 'with params:', queryParams);
 
     const result = await pool.query(query, queryParams);
     res.json(result.rows);
   } catch (error) {
-    console.error("Error fetching users:", error);
+    logger.error("Error fetching users:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -545,23 +453,15 @@ app.get("/users_OBSOLETE", async (req: Request, res: Response): Promise<void> =>
           ORDER BY ${sort} ${order}
       `;
 
-      // const validRoles = ['Doctor', 'Nurse', 'Secretary'];
-      // const roles = (role as string).split(',');
-      // if (!roles.every(r => validRoles.includes(r))) {
-      //     res.status(400).json({ error: "Invalid role(s) specified" });
-      //     return;
-      // }
-
-      console.log('Executing query:', query, 'with params:', queryParams); // For debugging
+      logger.info('Executing query:', query, 'with params:', queryParams); // For debugging
 
       const result = await pool.query(query, queryParams);
       res.json(result.rows);
   } catch (error) {
-      console.error("Error fetching users:", error);
+      logger.error("Error fetching users:", error);
       res.status(500).json({ error: "Internal server error" });
   }
 });
-
 
 // Add user
 app.post("/users", async (req: Request, res: Response): Promise<void> => {
@@ -584,11 +484,10 @@ app.post("/users", async (req: Request, res: Response): Promise<void> => {
     
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error("Error adding user:", error);
+    logger.error("Error adding user:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
-
 
 // Get single user
 app.get("/users/:id", async (req: Request, res: Response): Promise<void> => {
@@ -610,7 +509,7 @@ app.get("/users/:id", async (req: Request, res: Response): Promise<void> => {
       
       res.json(result.rows[0]);
   } catch (error) {
-      console.error("Error fetching user:", error);
+      logger.error("Error fetching user:", error);
       res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -626,7 +525,7 @@ app.get("/users_OBSOLETE", async (req: Request, res: Response): Promise<void> =>
       const result = await pool.query(query);
       res.json(result.rows);
   } catch (error) {
-      console.error("Error fetching users:", error);
+      logger.error("Error fetching users:", error);
       res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -658,11 +557,11 @@ app.put("/users/:id", async (req: Request, res: Response): Promise<void> => {
     }
 
     // Log the successful update
-    console.log(`User with ID ${id} successfully updated:`, result.rows[0]);
+    logger.info(`User with ID ${id} successfully updated:`, result.rows[0]);
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error("Error updating user:", error);
+    logger.error("Error updating user:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -671,7 +570,7 @@ app.put("/users/:id", async (req: Request, res: Response): Promise<void> => {
 app.delete("/users/:id", async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    console.log(`deleting user with id: ${[id]}`);
+    logger.info(`deleting user with id: ${[id]}`);
 
     const query = `
       DELETE FROM users 
@@ -688,7 +587,7 @@ app.delete("/users/:id", async (req: Request, res: Response): Promise<void> => {
 
     res.status(204).send();
   } catch (error) {
-    console.error("Error deleting user:", error);
+    logger.error("Error deleting user:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -740,12 +639,12 @@ app.get("/patients", async (req: Request, res: Response): Promise<void> => {
             ORDER BY ${sort} ${order}
         `;
 
-        console.log('Executing query:', query, 'with params:', queryParams); // For debugging
+        logger.info('Executing query:', query, 'with params:', queryParams); // For debugging
 
         const result = await pool.query(query, queryParams);
         res.json(result.rows);
     } catch (error) {
-        console.error("Error fetching patients:", error);
+        logger.error("Error fetching patients:", error);
         res.status(500).json({ error: "Internal server error" });
     }
 });
@@ -770,7 +669,7 @@ app.get("/patients/:id", async (req: Request, res: Response): Promise<void> => {
         
         res.json(result.rows[0]);
     } catch (error) {
-        console.error("Error fetching patient:", error);
+        logger.error("Error fetching patient:", error);
         res.status(500).json({ error: "Internal server error" });
     }
 });
@@ -793,10 +692,10 @@ app.post("/patients", async (req: Request, res: Response): Promise<void> => {
       const values = [name];
       const result = await pool.query(query, values);
       
-      console.log('Patient created:', result.rows[0]); // For debugging
+      logger.info('Patient created:', result.rows[0]); // For debugging
       res.status(201).json(result.rows[0]);
   } catch (error) {
-      console.error("Error adding patient:", error);
+      logger.error("Error adding patient:", error);
       res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -827,14 +726,13 @@ app.put("/patients/:id", async (req: Request, res: Response): Promise<void> => {
           return;
       }
 
-      console.log(`Patient with ID ${id} successfully updated:`, result.rows[0]); // For debugging
+      logger.info(`Patient with ID ${id} successfully updated:`, result.rows[0]); // For debugging
       res.json(result.rows[0]);
   } catch (error) {
-      console.error("Error updating patient:", error);
+      logger.error("Error updating patient:", error);
       res.status(500).json({ error: "Internal server error" });
   }
 });
-
 
 // Delete patient
 app.delete("/patients/:id", async (req: Request, res: Response): Promise<void> => {
@@ -856,7 +754,7 @@ app.delete("/patients/:id", async (req: Request, res: Response): Promise<void> =
 
     res.status(204).send();
   } catch (error) {
-    console.error("Error deleting patient:", error);
+    logger.error("Error deleting patient:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -876,7 +774,7 @@ app.get("/patients/:id/doctors", async (req: Request, res: Response): Promise<vo
     const result = await pool.query(query, [id]);
     res.json(result.rows);
   } catch (error) {
-    console.error("Error fetching patient's doctors:", error);
+    logger.error("Error fetching patient's doctors:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -947,7 +845,7 @@ app.post("/patients/:id/doctors", async (req: Request, res: Response): Promise<v
     const doctorDetails = await pool.query(doctorQuery, [doctorId]);
     res.status(201).json(doctorDetails.rows[0]);
   } catch (error) {
-    console.error("Error adding doctor to patient:", error);
+    logger.error("Error adding doctor to patient:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -979,7 +877,7 @@ app.delete("/patients/:patientId/doctors/:doctorId", async (req: Request, res: R
     const result = await pool.query(deleteQuery, [doctorId, patientId]);
     res.status(204).send();
   } catch (error) {
-    console.error("Error removing doctor from patient:", error);
+    logger.error("Error removing doctor from patient:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -1067,12 +965,11 @@ app.put("/todos/:todoId/assignment", async (req: Request, res: Response): Promis
       client.release();
     }
   } catch (error) {
-    console.error("Error updating task assignment:", error);
+    logger.error("Error updating task assignment:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  logger.info(`Server is running on port ${PORT}`);
 });
