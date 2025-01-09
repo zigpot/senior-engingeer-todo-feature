@@ -33,7 +33,7 @@ describe('API Integration Tests', () => {
         .post('/users')
         .send({
           name: 'Test User',
-          role: 'nurse',
+          role: 'Nurse',
         });
 
       expect(response.status).toBe(201);
@@ -78,7 +78,7 @@ describe('API Integration Tests', () => {
         .put(`/users/${testUserId}`)
         .send({
           name: 'Updated User',
-          role: 'Staff'
+          role: 'Secretary'
         });
 
       expect(response.status).toBe(200);

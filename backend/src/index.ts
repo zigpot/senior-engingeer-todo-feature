@@ -176,18 +176,20 @@ app.get("/todos/:id", async (req: Request, res: Response): Promise<void> => {
 app.get("/todos/:todoId/resources", async (req: Request, res: Response): Promise<void> => {
   try {
     const { todoId } = req.params;
+    logger.info(`Fetching resources for task with ID ${todoId}`);
     
     const query = `
-      SELECT id, todo_id, url_link
+      SELECT id, todo_id, resource_link
       FROM resources
       WHERE todo_id = $1
       ORDER BY id ASC
     `;
+    logger.info(`Executing query: ${[todoId]}`);
     
     const result = await pool.query(query, [todoId]);
     res.json(result.rows);
   } catch (error) {
-    logger.error("Error fetching resources:", error);
+    logger.error("Error fetching resources GET RESOURCES:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
